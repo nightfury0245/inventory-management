@@ -1,0 +1,23 @@
+
+.dashboard-box{
+    background-color : #000000;
+    color: #FFFFFF;
+    padding : 10px;
+    width : 500px;
+    height : 300px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid with minimum column width of 200px */
+    gap: 10px;
+}
+
+.item{
+    padding:50px;
+}
+
+.item hover{
+    background-color: black;
+}
+
+.new-order{
+    background-color : rgb(212, 169, 16);
+}
