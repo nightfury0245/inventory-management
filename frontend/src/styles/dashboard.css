@@ -1,13 +1,22 @@
 
 .dashboard-box{
     background-color : #000000;
-    color: #FFFFFF;
-    padding : 10px;
+    color: #179b1b;
+    /* padding : 10px; */
     width : 500px;
     height : 300px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid with minimum column width of 200px */
-    gap: 10px;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0px;
+    border: 0px;
+}
+
+.root{
+    background-color: #000000;
+    color: #ffffff;
+    height: 100%;
+    width: 100%;
 }
 
 .item{
