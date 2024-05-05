@@ -48,8 +48,15 @@ function App() {
         </>
       )}
       {state.trackOrder && (
-        <div>
+        <div className="track-order">
           <button className="back-button" onClick={handleBackClick}>Back</button>
+          <h1>Track orders</h1>
+          <ul>
+            <li className='Heading'>
+              <b>Order name</b>
+              <b>OrderStatus</b>
+            </li>
+          </ul>
           <TrackOrders />
         </div>
       )}

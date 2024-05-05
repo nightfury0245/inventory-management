@@ -34,10 +34,10 @@ function NewOrder() {
       alert('Please enter the order name.');
       return;
     }
-    if (parts.every(part => part.partName.trim() === '' || part.description.trim() === '')) {
-      alert('Please fill in at least one part name and description.');
-      return;
-    }
+    // if (parts.every(part => part.partName.trim() === '')) {
+    //   alert('Please fill in at least one part name and description.');
+    //   return;
+    // }
     // Handle form submission here (e.g., send data to backend)
   };
 
