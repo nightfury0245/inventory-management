@@ -4,7 +4,7 @@ import NewOrder from "./NewOrder/NewOrder.js";
 import TrackOrders from "./TrackOrders/TrackOrders.js";
 import Inventory from "./Inventory/Inventory.js";
 import GenerateLabel from "./GenerateLabel/GenerateLabel.js";
-
+import Invoice from "./TrackOrders/Invoice.js";
 function App() {
   const [state, setState] = useState({
     newOrder: false,
@@ -50,14 +50,15 @@ function App() {
       {state.trackOrder && (
         <div className="track-order">
           <button className="back-button" onClick={handleBackClick}>Back</button>
-          <h1>Track orders</h1>
-          <ul>
+          <h1 style={{textAlign : "center"}}>Track orders</h1>
+          {/* <ul>
             <li className='Heading'>
               <b>Order name</b>
               <b>OrderStatus</b>
             </li>
-          </ul>
+          </ul> */}
           <TrackOrders />
+          {/* <Invoice /> */}
         </div>
       )}
       {state.inventory && (

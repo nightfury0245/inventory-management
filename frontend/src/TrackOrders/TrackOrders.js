@@ -1,49 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import './TrackOrders.css';
-import axios from 'axios';
-import Order from './Order'; // Assuming the pop-up component is in a separate file
-
-function TrackOrders() {
-  const [orders, setOrders] = useState([{ order_name: 'Order 1', status: 'Status', data: 'Data' }]);
-  const [selectedOrder, setSelectedOrder] = useState(null); // State to store the selected order
-  const [isPopupOpen, setIsPopupOpen] = useState(false); // State to manage pop-up visibility
-
-  const getOrders = () => {
-    const url = "http://localhost:3003/orders";
-    axios.get(url)
-      .then(response => {
-        setOrders(response.data);
-      })
-      .catch(error => {
-        console.log(error);
-      });
-  };
-
-  useEffect(() => {
-    getOrders();
-    const interval = setInterval(getOrders, 10000);
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Function to handle click event and open pop-up
-  const handleOrderClick = (order) => {
-    setSelectedOrder(order);
-    setIsPopupOpen(true);
-  };
-
-  // Function to close the pop-up
-  const handleClosePopup = () => {
-    setSelectedOrder(null);
-    setIsPopupOpen(false);
-  };
-
+import React, { useState, useEffect } from "react";
+import "./TrackOrders.css";
+import axios from "axios";
+const OrdersTab = ({ orders, onSelectOrder }) => {
   return (
-    <div className="track-order-container">
-      <div className="orders">
+    <div className="orders-tab">
+      <h2>Orders</h2>
+      <div className="orders-data">
         <ul>
-          {orders.map(order => (
+          {orders.map((order) => (
             <li key={order.order_name} onClick={() => handleOrderClick(order)}>
               <p>{order.order_name}</p>
               <p>{order.status}</p>
@@ -51,18 +15,61 @@ function TrackOrders() {
           ))}
         </ul>
       </div>
-      {/* Conditional rendering of the pop-up */}
-      {isPopupOpen && (
-         <div className="popup-overlay">
-        <Order
-          order={selectedOrder}
-          onClose={handleClosePopup}
-          onBack={handleClosePopup} // Call handleClosePopup to close the pop-up
-        />
+    </div>
+  );
+};
+
+const OrderPreview = ({ selectedOrder }) => {
+  return (
+    <div className="order-preview">
+      <h2>Order Preview</h2>
+      {selectedOrder && (
+        <div>
+          <h3>{selectedOrder.order_name}</h3>
+          <p>Status: {selectedOrder.status}</p>
+          <h4>Data:</h4>
+          <ul>
+            {Object.entries(selectedOrder.data).map(([key, value]) => (
+              <li key={key}>
+                <strong>{key}:</strong> {value}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
   );
-}
+};
+
+const Separator = () => {
+  return <div className="separator"></div>;
+};
+
+const TrackOrders = () => {
+  const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const fetchOrderDetails = async () => {
+    const response = await axios.get("http://192.168.1.9:3003/orders");
+    setOrders(response.data);
+    console.log(response.data);
+  };
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, []);
+
+  const handleSelectOrder = (order) => {
+    setSelectedOrder(order);
+  };
+
+  return (
+    <div className="app">
+      <OrdersTab orders={orders} onSelectOrder={handleSelectOrder} />
+      <Separator />
+      <OrderPreview selectedOrder={selectedOrder} />
+    </div>
+  );
+};
 
 export default TrackOrders;
