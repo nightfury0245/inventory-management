@@ -1,154 +1,103 @@
-import React, { useState, useEffect } from 'react';
-import { TextField, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import Autocomplete from '@mui/material/Autocomplete';
+import React, { useState } from "react";
+import {
+  TextField,
+  Button,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
 
 const NewOrder = () => {
-  const [parts, setParts] = useState([]);
-  const [selectedPart, setSelectedPart] = useState(null);
-  const [selectedMFD, setSelectedMFD] = useState(null);
+  const [partsData, setPartsData] = useState([
+    { "part name": "Part 1", quantity: 10 },
+    { "part name": "Part 2", quantity: 20 },
+    { "part name": "Part 3", quantity: 30 },
+    { "part name": "Part 4", quantity: 40 },
+    { "part name": "Part 5", quantity: 50 },
+    { "part name": "Part 6", quantity: 60 },
+    { "part name": "Part 7", quantity: 70 },
+    { "part name": "Part 8", quantity: 80 },
+    { "part name": "Part 9", quantity: 90 },
+    { "part name": "Part 10", quantity: 100 },
+  ]);
+  const [selectedPart, setSelectedPart] = useState("");
   const [requiredQuantity, setRequiredQuantity] = useState(1);
   const [orderItems, setOrderItems] = useState([]);
-  const [totalCost, setTotalCost] = useState(0);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
-  useEffect(() => {
-    // Fetch parts data from API
-    fetchParts();
-  }, []);
-
-  const fetchParts = () => {
-    // Fetch parts data from API
-    // Replace this with your API call to fetch parts data
-    const partsData = [{
-      "Item_id": 2,
-      "Part Name": "Part B",
-      "Unit of measurement": "pcs",
-      "Quantity": [
-        {
-          "MFD": "date1",
-          "available quantity": 100,
-          "part per pc": 30,
-          "Expiry Date": "2024-06-13",
-          "Invoice Document copy": "link_to_invoice",
-          "Invoice number": "INV002"
-        },
-        {
-          "MFD": "date2",
-          "available quantity": 300,
-          "part per pc": 40,
-          "Expiry Date": "2024-06-13",
-          "Invoice Document copy": "link_to_invoice",
-          "Invoice number": "INV002"
-        },
-        {
-          "MFD": "date3",
-          "available quantity": 30,
-          "part per pc": 50,
-          "Expiry Date": "2024-06-13",
-          "Invoice Document copy": "link_to_invoice",
-          "Invoice number": "INV002"
-        },
-        {
-          "MFD": "date4",
-          "available quantity": 400,
-          "part per pc": 60,
-          "Expiry Date": "2024-06-13",
-          "Invoice Document copy": "link_to_invoice",
-          "Invoice number": "INV002"
-        },
-        {
-          "MFD": "date5",
-          "available quantity": 500,
-          "part per pc": 70,
-          "Expiry Date": "2024-06-13",
-          "Invoice Document copy": "link_to_invoice",
-          "Invoice number": "INV002"
-        }
-      ]
-    }];
-
-    setParts(partsData);
-  };
-
   const handleAddPart = () => {
-    if (selectedPart && selectedMFD) {
-      const selectedQuantity = selectedPart.Quantity.find(quantity => quantity.MFD === selectedMFD);
-      const availableQuantity = selectedQuantity ? selectedQuantity["available quantity"] : 0;
-
-      const existingQuantity = orderItems.reduce((total, item) => {
-        if (item["Item_id"] === selectedPart["Item_id"] && item.MFD === selectedMFD) {
-          return total + item.requiredQuantity;
-        }
-        return total;
-      }, 0);
-
-      const totalQuantity = existingQuantity + requiredQuantity;
-
-      if (totalQuantity > availableQuantity) {
-        alert("The sum of the required quantity exceeds the available quantity of this part. Please enter a value within the acceptable range.");
-        return;
-      }
-
-      const existingIndex = orderItems.findIndex(item => item["Item_id"] === selectedPart["Item_id"] && item.MFD === selectedMFD);
+    if (selectedPart && requiredQuantity > 0) {
+      const existingIndex = orderItems.findIndex(
+        (item) => item.partName === selectedPart
+      );
       if (existingIndex !== -1) {
         // If the part already exists in the order, update the quantity
         const updatedOrderItems = [...orderItems];
-        updatedOrderItems[existingIndex].requiredQuantity += requiredQuantity;
-        updatedOrderItems[existingIndex].total = updatedOrderItems[existingIndex].requiredQuantity * selectedQuantity['part per pc'];
+        updatedOrderItems[existingIndex].quantity += requiredQuantity;
         setOrderItems(updatedOrderItems);
-        setTotalCost(calculateTotalCost(updatedOrderItems));
       } else {
         // If the part doesn't exist in the order, add it as a new row
-        const total = requiredQuantity * selectedQuantity['part per pc'];
-        const newOrderItem = { ...selectedPart, MFD: selectedMFD, requiredQuantity, total };
+        const newOrderItem = {
+          partName: selectedPart,
+          quantity: requiredQuantity,
+        };
         setOrderItems([...orderItems, newOrderItem]);
-        setTotalCost(totalCost + total);
       }
-      setSelectedPart(null);
-      setSelectedMFD(null);
+      // Reset input fields
+      setSelectedPart("");
       setRequiredQuantity(1);
     }
   };
 
   const handleRemovePart = (index) => {
-    const removedItem = orderItems[index];
-    setOrderItems(orderItems.filter((_, i) => i !== index));
-    setTotalCost(totalCost - removedItem.total);
+    const updatedOrderItems = [...orderItems];
+    updatedOrderItems.splice(index, 1);
+    setOrderItems(updatedOrderItems);
   };
 
   const handleConfirmOrder = () => {
-    // Call function to place order
-    console.log("Order Placed:", orderItems);
+    setConfirmationOpen(true);
+  };
+
+  const handleCloseConfirmation = () => {
     setConfirmationOpen(false);
   };
 
-  const calculateTotalCost = (items) => {
-    return items.reduce((total, item) => total + item.total, 0);
+  const getTotalOrderCost = () => {
+    return orderItems.reduce((total, item) => {
+      return total + item.quantity * getPartPrice(item.partName);
+    }, 0);
+  };
+
+  const getPartPrice = (partName) => {
+    // todo remember to send part id
+    // Replace this with your logic to fetch the price of the part from the backend or any other source
+    return 10; // Dummy price for demonstration
   };
 
   return (
-    <div style={{ textAlign: 'center' }}>
+    <div style={{ textAlign: "center" }}>
       <Typography variant="h4" gutterBottom>
         New Order
       </Typography>
 
       <Autocomplete
-        options={parts}
-        getOptionLabel={(part) => part["Part Name"]}
+        options={partsData.map((part) => part["part name"] + " : "+ part["quantity"] + " available")}
         value={selectedPart}
-        onChange={(e, newValue) => {
-          setSelectedPart(newValue);
-          setSelectedMFD(null); // Reset selected MFD when changing the selected part
-        }}
-        renderInput={(params) => <TextField {...params} label="Select Part" variant="outlined" />}
-        style={{ marginBottom: 16 }}
-      />
-
-<Autocomplete
-        options={selectedPart ? selectedPart.Quantity.map(quantity => quantity.MFD) : []}
-        value={selectedMFD}
-        onChange={(e, newValue) => setSelectedMFD(newValue)}
-        renderInput={(params) => <TextField {...params} label="Select MFD" variant="outlined" />}
+        onChange={(event, newValue) => setSelectedPart(newValue)}
+        renderInput={(params) => (
+          <TextField {...params} label="Select Part" variant="outlined" />
+        )}
         style={{ marginBottom: 16 }}
       />
 
@@ -156,13 +105,17 @@ const NewOrder = () => {
         type="number"
         label="Required Quantity"
         value={requiredQuantity}
-        onChange={(e) => setRequiredQuantity(e.target.value)}
+        onChange={(event) => setRequiredQuantity(parseInt(event.target.value))}
         fullWidth
         variant="outlined"
         style={{ marginBottom: 16 }}
       />
 
-      <Button variant="contained" onClick={handleAddPart} style={{ marginBottom: 16 }}>
+      <Button
+        variant="contained"
+        onClick={handleAddPart}
+        style={{ marginBottom: 16 }}
+      >
         Add Part
       </Button>
 
@@ -171,23 +124,23 @@ const NewOrder = () => {
           <TableHead>
             <TableRow>
               <TableCell>Part Name</TableCell>
-              <TableCell>MFD</TableCell>
-              <TableCell>Number of units</TableCell>
-              <TableCell>Per part price</TableCell>
-              <TableCell>Total cost</TableCell>
-              <TableCell></TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {orderItems.map((item, index) => (
               <TableRow key={index}>
-                <TableCell>{item["Part Name"]}</TableCell>
-                <TableCell>{item.MFD}</TableCell>
-                <TableCell>{item.requiredQuantity}</TableCell>
-                <TableCell>{selectedPart && selectedPart.Quantity.find(quantity => quantity.MFD === item.MFD)["part per pc"]}</TableCell>
-                <TableCell>{item.total}</TableCell>
+                <TableCell>{item.partName}</TableCell>
+                <TableCell>{item.quantity}</TableCell>
                 <TableCell>
-                  <Button variant="contained" color="error" onClick={() => handleRemovePart(index)}>Remove</Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={() => handleRemovePart(index)}
+                  >
+                    Remove
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -195,43 +148,42 @@ const NewOrder = () => {
         </Table>
       </TableContainer>
 
-
-      <Button variant="contained" onClick={() => setConfirmationOpen(true)}>
+      <Button variant="contained" onClick={handleConfirmOrder}>
         Continue
       </Button>
 
-      <Dialog open={confirmationOpen} onClose={() => setConfirmationOpen(false)}>
-        <DialogTitle>Order Confirmation</DialogTitle>
+      <Dialog open={confirmationOpen} onClose={handleCloseConfirmation}>
+        <DialogTitle>Order Summary</DialogTitle>
         <DialogContent>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Part Name</TableCell>
-                  <TableCell>MFD</TableCell>
-                  <TableCell>Number of units</TableCell>
-                  <TableCell>Per part price</TableCell>
-                  <TableCell>Total cost</TableCell>
+                  <TableCell>Required Quantity</TableCell>
+                  <TableCell>Estimated Cost</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {orderItems.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell>{item["Part Name"]}</TableCell>
-                    <TableCell>{item.MFD}</TableCell>
-                    <TableCell>{item.requiredQuantity}</TableCell>
-                    <TableCell>{selectedPart.Quantity.find(quantity => quantity.MFD === item.MFD)["part per pc"]}</TableCell>
-                    <TableCell>{item.total}</TableCell>
+                    <TableCell>{item.partName}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>
+                      {item.quantity * getPartPrice(item.partName)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-          <Typography variant="h6" style={{ marginTop: 16 }}>Estimated Total Cost: {totalCost}</Typography>
+          <Typography variant="h6" style={{ marginTop: 16 }}>
+            Total Order Cost: {getTotalOrderCost()}
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmationOpen(false)}>Go back and edit</Button>
-          <Button onClick={handleConfirmOrder} color="primary">Confirm & place order</Button>
+          <Button onClick={handleCloseConfirmation}>Go back and edit</Button>
+          <Button onClick={handleCloseConfirmation}>Place order</Button>
         </DialogActions>
       </Dialog>
     </div>
