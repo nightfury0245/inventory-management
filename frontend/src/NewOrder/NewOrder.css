@@ -7,7 +7,21 @@ body {
 .container {
     width: 100%;
     padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
 }
+
+.new-order-form{
+    width: 90%;
+    flex: 1 1 50%;
+    margin: 5px;
+}
+
+@media (max-width: 600px) {
+    .new-order-form {
+      flex-basis: 100%; /* Each form group takes 100% of the container width */
+    }
+  }
 
 .order-input {
     margin-bottom: 10px;
@@ -27,7 +41,7 @@ body {
     font-size: 16px;
     margin-top: 10px;
     cursor: pointer;
-    border-radius:5px;
+    border-radius: 5px;
 }
 
 .part-input {
@@ -48,10 +62,10 @@ body {
     color: white;
     border: none;
     cursor: pointer;
-    border-radius:5px;
+    border-radius: 5px;
 }
 
-.new-order-submit{
+.new-order-submit {
     padding: 10px 20px;
     background-color: #007bff;
     color: white;
@@ -61,5 +75,5 @@ body {
     font-size: 16px;
     margin-top: 10px;
     cursor: pointer;
-    border-radius:5px;
+    border-radius: 5px;
 }
