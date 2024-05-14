@@ -29,19 +29,20 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { visuallyHidden } from '@mui/utils';
 
-function createData(id, partName, date, unitOfMeasurement, perPartPrice) {
+function createData(id, partName, date, unitOfMeasurement, perPartPrice, quantity) {
   return {
     id,
     partName,
     date,
     unitOfMeasurement,
     perPartPrice,
+    quantity,
   };
 }
 
 const initialRows = [
-  createData(1, 'Part A', '2023-05-14', 'kg', 10.5),
-  createData(2, 'Part B', '2023-05-15', 'kg', 12.0),
+  createData(1, 'Part A', '2023-05-14', 'kg', 10.5, 100),
+  createData(2, 'Part B', '2023-05-15', 'kg', 12.0, 150),
 ];
 
 function descendingComparator(a, b, orderBy) {
@@ -96,6 +97,12 @@ const headCells = [
     numeric: true,
     disablePadding: false,
     label: 'Per Part Price',
+  },
+  {
+    id: 'quantity',
+    numeric: true,
+    disablePadding: false,
+    label: 'Quantity',
   },
 ];
 
@@ -232,6 +239,7 @@ export default function InventoryTable() {
     date: '',
     unitOfMeasurement: '',
     perPartPrice: '',
+    quantity: '',
   }]);
   const [file, setFile] = React.useState(null);
 
@@ -283,67 +291,67 @@ export default function InventoryTable() {
     setDense(event.target.checked);
   };
 
+  const isSelected = (name) => selected.indexOf(name) !== -1;
+
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
   const handleAddClick = () => {
     setOpen(true);
   };
 
-  const handleClose = () => {
+  const handleDialogClose = () => {
     setOpen(false);
-    setFormValues([{
+  };
+
+  const handleFormChange = (index, event) => {
+    let data = [...formValues];
+    data[index][event.target.name] = event.target.value;
+    setFormValues(data);
+  };
+
+  const handleAddFields = () => {
+    let newfield = {
       partName: '',
       date: '',
       unitOfMeasurement: '',
       perPartPrice: '',
-    }]);
-    setFile(null);
+      quantity: '',
+    };
+    setFormValues([...formValues, newfield]);
   };
 
-  const handleChange = (index) => (event) => {
-    const newFormValues = formValues.map((formValue, i) => {
-      if (i === index) {
-        return {
-          ...formValue,
-          [event.target.name]: event.target.value,
-        };
-      }
-      return formValue;
-    });
-    setFormValues(newFormValues);
+  const handleRemoveFields = (index) => {
+    let data = [...formValues];
+    data.splice(index, 1);
+    setFormValues(data);
   };
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
   };
 
-  const handleAddPart = () => {
-    setFormValues([
-      ...formValues,
-      {
-        partName: '',
-        date: '',
-        unitOfMeasurement: '',
-        perPartPrice: '',
-      },
-    ]);
+  const handleSaveClick = () => {
+    const newParts = formValues.map((formValue, index) =>
+      createData(
+        rows.length + index + 1,
+        formValue.partName,
+        formValue.date,
+        formValue.unitOfMeasurement,
+        parseFloat(formValue.perPartPrice),
+        parseInt(formValue.quantity, 10)
+      )
+    );
+    setRows([...rows, ...newParts]);
+    setFormValues([{
+      partName: '',
+      date: '',
+      unitOfMeasurement: '',
+      perPartPrice: '',
+      quantity: '',
+    }]);
+    setOpen(false);
   };
-
-  const handleSubmit = () => {
-    // Add new rows to the table
-    const newRows = formValues.map((formValue, index) => createData(
-      rows.length + index + 1,
-      formValue.partName,
-      formValue.date,
-      formValue.unitOfMeasurement,
-      parseFloat(formValue.perPartPrice),
-    ));
-    setRows([...rows, ...newRows]);
-    handleClose();
-  };
-
-  const isSelected = (name) => selected.indexOf(name) !== -1;
-
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -389,17 +397,13 @@ export default function InventoryTable() {
                           }}
                         />
                       </TableCell>
-                      <TableCell
-                        component="th"
-                        id={labelId}
-                        scope="row"
-                        padding="none"
-                      >
+                      <TableCell component="th" id={labelId} scope="row" padding="none">
                         {row.partName}
                       </TableCell>
-                      <TableCell align="right">{row.date}</TableCell>
-                      <TableCell align="right">{row.unitOfMeasurement}</TableCell>
+                      <TableCell align="left">{row.date}</TableCell>
+                      <TableCell align="left">{row.unitOfMeasurement}</TableCell>
                       <TableCell align="right">{row.perPartPrice}</TableCell>
+                      <TableCell align="right">{row.quantity}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -429,75 +433,75 @@ export default function InventoryTable() {
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
       />
-      
-      {/* Dialog Component */}
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={open} onClose={handleDialogClose} fullWidth maxWidth="md">
         <DialogTitle>Add New Parts</DialogTitle>
         <DialogContent>
-          <Button
-            variant="contained"
-            component="label"
-          >
-            Upload PDF
-            <input
-              type="file"
-              accept="application/pdf"
-              hidden
-              onChange={handleFileChange}
-            />
-          </Button>
-          {file && <Typography>{file.name}</Typography>}
-          {formValues.map((formValue, index) => (
-            <React.Fragment key={index}>
+          {formValues.map((form, index) => (
+            <Box key={index} display="flex" flexDirection="row" mb={2}>
               <TextField
-                autoFocus={index === 0}
+                autoFocus
                 margin="dense"
                 name="partName"
-                label="Part Name"
+                label={`Part ${index + 1}`}
                 type="text"
+                value={form.partName}
+                onChange={(event) => handleFormChange(index, event)}
                 fullWidth
-                variant="outlined"
-                onChange={handleChange(index)}
-                value={formValue.partName}
               />
               <TextField
                 margin="dense"
                 name="date"
                 label="Date"
                 type="date"
+                value={form.date}
+                onChange={(event) => handleFormChange(index, event)}
                 fullWidth
-                InputLabelProps={{ shrink: true }}
-                variant="outlined"
-                onChange={handleChange(index)}
-                value={formValue.date}
+                InputLabelProps={{
+                  shrink: true,
+                }}
               />
               <TextField
                 margin="dense"
                 name="unitOfMeasurement"
                 label="Unit of Measurement"
                 type="text"
+                value={form.unitOfMeasurement}
+                onChange={(event) => handleFormChange(index, event)}
                 fullWidth
-                variant="outlined"
-                onChange={handleChange(index)}
-                value={formValue.unitOfMeasurement}
               />
               <TextField
                 margin="dense"
                 name="perPartPrice"
                 label="Per Part Price"
                 type="number"
+                value={form.perPartPrice}
+                onChange={(event) => handleFormChange(index, event)}
                 fullWidth
-                variant="outlined"
-                onChange={handleChange(index)}
-                value={formValue.perPartPrice}
               />
-            </React.Fragment>
+              <TextField
+                margin="dense"
+                name="quantity"
+                label="Quantity"
+                type="number"
+                value={form.quantity}
+                onChange={(event) => handleFormChange(index, event)}
+                fullWidth
+              />
+              <IconButton onClick={() => handleRemoveFields(index)}>
+                <DeleteIcon />
+              </IconButton>
+            </Box>
           ))}
-          <Button onClick={handleAddPart}>Add Another Part</Button>
+          <Button onClick={handleAddFields}>Add More Parts</Button>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Add</Button>
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button onClick={handleSaveClick}>Save</Button>
         </DialogActions>
       </Dialog>
     </Box>
