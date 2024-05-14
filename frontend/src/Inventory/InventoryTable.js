@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {useEffect} from 'react';
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -28,6 +29,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { visuallyHidden } from '@mui/utils';
+import axios from 'axios';
 
 function createData(id, partName, date, unitOfMeasurement, perPartPrice) {
   return {
@@ -39,10 +41,7 @@ function createData(id, partName, date, unitOfMeasurement, perPartPrice) {
   };
 }
 
-const initialRows = [
-  createData(1, 'Part A', '2023-05-14', 'kg', 10.5),
-  createData(2, 'Part B', '2023-05-15', 'kg', 12.0),
-];
+
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -225,7 +224,7 @@ export default function InventoryTable() {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [rows, setRows] = React.useState(initialRows);
+  const [rows, setRows] = React.useState([]);
   const [open, setOpen] = React.useState(false);
   const [formValues, setFormValues] = React.useState([{
     partName: '',
@@ -328,6 +327,7 @@ export default function InventoryTable() {
   };
 
   const handleSubmit = () => {
+    // todo change this to comp
     // Add new rows to the table
     const newRows = formValues.map((formValue, index) => createData(
       rows.length + index + 1,
@@ -344,6 +344,27 @@ export default function InventoryTable() {
 
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
+  const getInventoryData = async() => {
+    // make api call and get inventory data
+    try {
+      const response = await axios.get("http://localhost:5000/getInventory");
+      setRows(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    getInventoryData();
+  
+    const interval = setInterval(() => getInventoryData(), 10000)
+    return () => {
+      clearInterval(interval);
+    }
+  }, [])
+  
 
   return (
     <Box sx={{ width: '100%' }}>
