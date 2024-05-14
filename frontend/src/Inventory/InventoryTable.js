@@ -20,33 +20,28 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import AddIcon from '@mui/icons-material/Add';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { visuallyHidden } from '@mui/utils';
 
-function createData(id, name, calories, fat, carbs, protein) {
+function createData(id, partName, date, unitOfMeasurement, perPartPrice) {
   return {
     id,
-    name,
-    calories,
-    fat,
-    carbs,
-    protein,
+    partName,
+    date,
+    unitOfMeasurement,
+    perPartPrice,
   };
 }
 
-const rows = [
-  createData(1, 'Cupcake', 305, 3.7, 67, 4.3),
-  createData(2, 'Donut', 452, 25.0, 51, 4.9),
-  createData(3, 'Eclair', 262, 16.0, 24, 6.0),
-  createData(4, 'Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData(5, 'Gingerbread', 356, 16.0, 49, 3.9),
-  createData(6, 'Honeycomb', 408, 3.2, 87, 6.5),
-  createData(7, 'Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData(8, 'Jelly Bean', 375, 0.0, 94, 0.0),
-  createData(9, 'KitKat', 518, 26.0, 65, 7.0),
-  createData(10, 'Lollipop', 392, 0.2, 98, 0.0),
-  createData(11, 'Marshmallow', 318, 0, 81, 2.0),
-  createData(12, 'Nougat', 360, 19.0, 9, 37.0),
-  createData(13, 'Oreo', 437, 18.0, 63, 4.0),
+const initialRows = [
+  createData(1, 'Part A', '2023-05-14', 'kg', 10.5),
+  createData(2, 'Part B', '2023-05-15', 'kg', 12.0),
 ];
 
 function descendingComparator(a, b, orderBy) {
@@ -65,10 +60,6 @@ function getComparator(order, orderBy) {
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-// Since 2020 all major browsers ensure sort stability with Array.prototype.sort().
-// stableSort() brings sort stability to non-modern browsers (notably IE11). If you
-// only support modern browsers you can replace stableSort(exampleArray, exampleComparator)
-// with exampleArray.slice().sort(exampleComparator)
 function stableSort(array, comparator) {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
@@ -83,34 +74,28 @@ function stableSort(array, comparator) {
 
 const headCells = [
   {
-    id: 'name',
+    id: 'partName',
     numeric: false,
     disablePadding: true,
-    label: 'Dessert (100g serving)',
+    label: 'Part Name',
   },
   {
-    id: 'calories',
-    numeric: true,
+    id: 'date',
+    numeric: false,
     disablePadding: false,
-    label: 'Calories',
+    label: 'Date',
   },
   {
-    id: 'fat',
-    numeric: true,
+    id: 'unitOfMeasurement',
+    numeric: false,
     disablePadding: false,
-    label: 'Fat (g)',
+    label: 'Unit of Measurement',
   },
   {
-    id: 'carbs',
+    id: 'perPartPrice',
     numeric: true,
     disablePadding: false,
-    label: 'Carbs (g)',
-  },
-  {
-    id: 'protein',
-    numeric: true,
-    disablePadding: false,
-    label: 'Protein (g)',
+    label: 'Per Part Price',
   },
 ];
 
@@ -131,7 +116,7 @@ function EnhancedTableHead(props) {
             checked={rowCount > 0 && numSelected === rowCount}
             onChange={onSelectAllClick}
             inputProps={{
-              'aria-label': 'select all desserts',
+              'aria-label': 'select all parts',
             }}
           />
         </TableCell>
@@ -171,7 +156,7 @@ EnhancedTableHead.propTypes = {
 };
 
 function EnhancedTableToolbar(props) {
-  const { numSelected } = props;
+  const { numSelected, handleAddClick } = props;
 
   return (
     <Toolbar
@@ -199,8 +184,15 @@ function EnhancedTableToolbar(props) {
           variant="h6"
           id="tableTitle"
           component="div"
+          display="flex"
+          alignItems="center"
         >
-          Nutrition
+          Parts Inventory
+          <Tooltip title="Add">
+            <IconButton onClick={handleAddClick}>
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
         </Typography>
       )}
 
@@ -223,15 +215,25 @@ function EnhancedTableToolbar(props) {
 
 EnhancedTableToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
+  handleAddClick: PropTypes.func.isRequired,
 };
 
 export default function InventoryTable() {
   const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
+  const [orderBy, setOrderBy] = React.useState('partName');
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rows, setRows] = React.useState(initialRows);
+  const [open, setOpen] = React.useState(false);
+  const [formValues, setFormValues] = React.useState([{
+    partName: '',
+    date: '',
+    unitOfMeasurement: '',
+    perPartPrice: '',
+  }]);
+  const [file, setFile] = React.useState(null);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -241,19 +243,19 @@ export default function InventoryTable() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = rows.map((n) => n.id);
-      setSelected(newSelected);
+      const newSelecteds = rows.map((n) => n.partName);
+      setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (event, id) => {
-    const selectedIndex = selected.indexOf(id);
+  const handleClick = (event, name) => {
+    const selectedIndex = selected.indexOf(name);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
+      newSelected = newSelected.concat(selected, name);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -264,6 +266,7 @@ export default function InventoryTable() {
         selected.slice(selectedIndex + 1),
       );
     }
+
     setSelected(newSelected);
   };
 
@@ -280,25 +283,72 @@ export default function InventoryTable() {
     setDense(event.target.checked);
   };
 
-  const isSelected = (id) => selected.indexOf(id) !== -1;
+  const handleAddClick = () => {
+    setOpen(true);
+  };
 
-  // Avoid a layout jump when reaching the last page with empty rows.
+  const handleClose = () => {
+    setOpen(false);
+    setFormValues([{
+      partName: '',
+      date: '',
+      unitOfMeasurement: '',
+      perPartPrice: '',
+    }]);
+    setFile(null);
+  };
+
+  const handleChange = (index) => (event) => {
+    const newFormValues = formValues.map((formValue, i) => {
+      if (i === index) {
+        return {
+          ...formValue,
+          [event.target.name]: event.target.value,
+        };
+      }
+      return formValue;
+    });
+    setFormValues(newFormValues);
+  };
+
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
+
+  const handleAddPart = () => {
+    setFormValues([
+      ...formValues,
+      {
+        partName: '',
+        date: '',
+        unitOfMeasurement: '',
+        perPartPrice: '',
+      },
+    ]);
+  };
+
+  const handleSubmit = () => {
+    // Add new rows to the table
+    const newRows = formValues.map((formValue, index) => createData(
+      rows.length + index + 1,
+      formValue.partName,
+      formValue.date,
+      formValue.unitOfMeasurement,
+      parseFloat(formValue.perPartPrice),
+    ));
+    setRows([...rows, ...newRows]);
+    handleClose();
+  };
+
+  const isSelected = (name) => selected.indexOf(name) !== -1;
+
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
-  const visibleRows = React.useMemo(
-    () =>
-      stableSort(rows, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-      ),
-    [order, orderBy, page, rowsPerPage],
-  );
 
   return (
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar numSelected={selected.length} />
+        <EnhancedTableToolbar numSelected={selected.length} handleAddClick={handleAddClick} />
         <TableContainer>
           <Table
             sx={{ minWidth: 750 }}
@@ -314,45 +364,45 @@ export default function InventoryTable() {
               rowCount={rows.length}
             />
             <TableBody>
-              {visibleRows.map((row, index) => {
-                const isItemSelected = isSelected(row.id);
-                const labelId = `enhanced-table-checkbox-${index}`;
+              {stableSort(rows, getComparator(order, orderBy))
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((row, index) => {
+                  const isItemSelected = isSelected(row.partName);
+                  const labelId = `enhanced-table-checkbox-${index}`;
 
-                return (
-                  <TableRow
-                    hover
-                    onClick={(event) => handleClick(event, row.id)}
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    key={row.id}
-                    selected={isItemSelected}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        color="primary"
-                        checked={isItemSelected}
-                        inputProps={{
-                          'aria-labelledby': labelId,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell
-                      component="th"
-                      id={labelId}
-                      scope="row"
-                      padding="none"
+                  return (
+                    <TableRow
+                      hover
+                      onClick={(event) => handleClick(event, row.partName)}
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      key={row.id}
+                      selected={isItemSelected}
                     >
-                      {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.calories}</TableCell>
-                    <TableCell align="right">{row.fat}</TableCell>
-                    <TableCell align="right">{row.carbs}</TableCell>
-                    <TableCell align="right">{row.protein}</TableCell>
-                  </TableRow>
-                );
-              })}
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          color="primary"
+                          checked={isItemSelected}
+                          inputProps={{
+                            'aria-labelledby': labelId,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell
+                        component="th"
+                        id={labelId}
+                        scope="row"
+                        padding="none"
+                      >
+                        {row.partName}
+                      </TableCell>
+                      <TableCell align="right">{row.date}</TableCell>
+                      <TableCell align="right">{row.unitOfMeasurement}</TableCell>
+                      <TableCell align="right">{row.perPartPrice}</TableCell>
+                    </TableRow>
+                  );
+                })}
               {emptyRows > 0 && (
                 <TableRow
                   style={{
@@ -379,6 +429,77 @@ export default function InventoryTable() {
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
       />
+      
+      {/* Dialog Component */}
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>Add New Parts</DialogTitle>
+        <DialogContent>
+          <Button
+            variant="contained"
+            component="label"
+          >
+            Upload PDF
+            <input
+              type="file"
+              accept="application/pdf"
+              hidden
+              onChange={handleFileChange}
+            />
+          </Button>
+          {file && <Typography>{file.name}</Typography>}
+          {formValues.map((formValue, index) => (
+            <React.Fragment key={index}>
+              <TextField
+                autoFocus={index === 0}
+                margin="dense"
+                name="partName"
+                label="Part Name"
+                type="text"
+                fullWidth
+                variant="outlined"
+                onChange={handleChange(index)}
+                value={formValue.partName}
+              />
+              <TextField
+                margin="dense"
+                name="date"
+                label="Date"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                variant="outlined"
+                onChange={handleChange(index)}
+                value={formValue.date}
+              />
+              <TextField
+                margin="dense"
+                name="unitOfMeasurement"
+                label="Unit of Measurement"
+                type="text"
+                fullWidth
+                variant="outlined"
+                onChange={handleChange(index)}
+                value={formValue.unitOfMeasurement}
+              />
+              <TextField
+                margin="dense"
+                name="perPartPrice"
+                label="Per Part Price"
+                type="number"
+                fullWidth
+                variant="outlined"
+                onChange={handleChange(index)}
+                value={formValue.perPartPrice}
+              />
+            </React.Fragment>
+          ))}
+          <Button onClick={handleAddPart}>Add Another Part</Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit}>Add</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
