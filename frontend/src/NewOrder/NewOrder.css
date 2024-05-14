@@ -1,79 +1,39 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-}
+/* .new-order-container{
+    text-align: center;
+    width: 80vw;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+} */
 
-.container {
-    width: 100%;
-    padding: 20px;
+.new-order-container {
     display: flex;
     flex-wrap: wrap;
-}
-
-.new-order-form{
-    width: 90%;
-    flex: 1 1 50%;
-    margin: 5px;
-}
-
-@media (max-width: 600px) {
-    .new-order-form {
-      flex-basis: 100%; /* Each form group takes 100% of the container width */
-    }
   }
-
-.order-input {
-    margin-bottom: 10px;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-.add-part-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin-top: 10px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-.part-input {
-    display: flex;
-    margin-bottom: 10px;
-}
-
-.part-input input {
+  
+  .new-order-form {
     flex: 1;
-    margin-right: 10px;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-.part-input button {
-    padding: 10px 20px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-.new-order-submit {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin-top: 10px;
-    cursor: pointer;
-    border-radius: 5px;
-}
+  }
+  
+  .new-order-table {
+    flex: 1;
+    margin-top: 7vh;
+  }
+  
+  .divider {
+    flex: 0 0 auto;
+    background-color: #ccc;
+  }
+  
+  .horizontal-layout .divider {
+    width: 2px;
+    height: 100%;
+    margin: 0 16px;
+  }
+  
+  .vertical-layout .divider {
+    width: 100%;
+    height: 2px;
+    margin: 16px 0;
+  }
+  

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./NewOrder.css";
 import {
   TextField,
   Button,
@@ -34,6 +35,20 @@ const NewOrder = () => {
   const [requiredQuantity, setRequiredQuantity] = useState(1);
   const [orderItems, setOrderItems] = useState([]);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [isHorizontalLayout, setIsHorizontalLayout] = useState(true);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsHorizontalLayout(window.innerWidth > 600);
+    };
+
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const handleAddPart = () => {
     if (selectedPart && requiredQuantity > 0) {
@@ -86,82 +101,49 @@ const NewOrder = () => {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <React.Fragment>
+      <div className={`new-order-container ${isHorizontalLayout ? "horizontal-layout" : "vertical-layout"}`}>
+        <div className="new-order-form">
       <Typography variant="h4" gutterBottom>
         New Order
       </Typography>
+          <Autocomplete
+            options={partsData.map((part) => part["part name"] + " : " + part["quantity"] + " available")}
+            value={selectedPart}
+            onChange={(event, newValue) => setSelectedPart(newValue)}
+            renderInput={(params) => (
+              <TextField {...params} label="Select Part" variant="outlined" />
+            )}
+            style={{ marginBottom: 16 }}
+          />
 
-      <Autocomplete
-        options={partsData.map((part) => part["part name"] + " : "+ part["quantity"] + " available")}
-        value={selectedPart}
-        onChange={(event, newValue) => setSelectedPart(newValue)}
-        renderInput={(params) => (
-          <TextField {...params} label="Select Part" variant="outlined" />
-        )}
-        style={{ marginBottom: 16 }}
-      />
+          <TextField
+            type="number"
+            label="Required Quantity"
+            value={requiredQuantity}
+            onChange={(event) => setRequiredQuantity(parseInt(event.target.value))}
+            fullWidth
+            variant="outlined"
+            style={{ marginBottom: 16 }}
+          />
 
-      <TextField
-        type="number"
-        label="Required Quantity"
-        value={requiredQuantity}
-        onChange={(event) => setRequiredQuantity(parseInt(event.target.value))}
-        fullWidth
-        variant="outlined"
-        style={{ marginBottom: 16 }}
-      />
-
-      <Button
-        variant="contained"
-        onClick={handleAddPart}
-        style={{ marginBottom: 16 }}
-      >
-        Add Part
-      </Button>
-
-      <TableContainer component={Paper} style={{ marginBottom: 16 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Part Name</TableCell>
-              <TableCell>Quantity</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {orderItems.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell>{item.partName}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleRemovePart(index)}
-                  >
-                    Remove
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Button variant="contained" onClick={handleConfirmOrder}>
-        Continue
-      </Button>
-
-      <Dialog open={confirmationOpen} onClose={handleCloseConfirmation}>
-        <DialogTitle>Order Summary</DialogTitle>
-        <DialogContent>
-          <TableContainer component={Paper}>
+          <Button
+            variant="contained"
+            onClick={handleAddPart}
+            style={{ marginBottom: 16 }}
+          >
+            Add Part
+          </Button>
+        </div>
+        <div className={`divider ${isHorizontalLayout ? "vertical" : "horizontal"}`}></div>
+        <div className="new-order-table">
+          <TableContainer component={Paper} style={{ marginBottom: 16 }}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Part Name</TableCell>
-                  <TableCell>Required Quantity</TableCell>
-                  <TableCell>Estimated Cost</TableCell>
+                  <TableCell>Quantity</TableCell>
+                  <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -170,23 +152,61 @@ const NewOrder = () => {
                     <TableCell>{item.partName}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell>
-                      {item.quantity * getPartPrice(item.partName)}
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleRemovePart(index)}
+                      >
+                        Remove
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-          <Typography variant="h6" style={{ marginTop: 16 }}>
-            Total Order Cost: {getTotalOrderCost()}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConfirmation}>Go back and edit</Button>
-          <Button onClick={handleCloseConfirmation}>Place order</Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+
+          <Button variant="contained" onClick={handleConfirmOrder}>
+            Continue
+          </Button>
+
+          <Dialog open={confirmationOpen} onClose={handleCloseConfirmation}>
+            <DialogTitle>Order Summary</DialogTitle>
+            <DialogContent>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Part Name</TableCell>
+                      <TableCell>Required Quantity</TableCell>
+                      <TableCell>Estimated Cost</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {orderItems.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{item.partName}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>
+                          {item.quantity * getPartPrice(item.partName)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Typography variant="h6" style={{ marginTop: 16 }}>
+                Total Order Cost: {getTotalOrderCost()}
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseConfirmation}>Go back and edit</Button>
+              <Button onClick={handleCloseConfirmation}>Place order</Button>
+            </DialogActions>
+          </Dialog>
+        </div>
+      </div>
+    </React.Fragment>
   );
 };
 
