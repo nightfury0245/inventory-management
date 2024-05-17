@@ -20,16 +20,11 @@ import Autocomplete from "@mui/material/Autocomplete";
 
 const NewOrder = () => {
   const [partsData, setPartsData] = useState([
-    { "part name": "Part 1", quantity: 10 },
-    { "part name": "Part 2", quantity: 20 },
-    { "part name": "Part 3", quantity: 30 },
-    { "part name": "Part 4", quantity: 40 },
-    { "part name": "Part 5", quantity: 50 },
-    { "part name": "Part 6", quantity: 60 },
-    { "part name": "Part 7", quantity: 70 },
-    { "part name": "Part 8", quantity: 80 },
-    { "part name": "Part 9", quantity: 90 },
-    { "part name": "Part 10", quantity: 100 },
+    { "part name": "Part A", quantity: 10 },
+    { "part name": "Part B", quantity: 20 },
+    { "part name": "Part C", quantity: 30 },
+    { "part name": "Part D", quantity: 40 },
+    { "part name": "Part E", quantity: 50 },
   ]);
   const [selectedPart, setSelectedPart] = useState("");
   const [requiredQuantity, setRequiredQuantity] = useState(1);
@@ -95,7 +90,6 @@ const NewOrder = () => {
   };
 
   const getPartPrice = (partName) => {
-    // todo remember to send part id
     // Replace this with your logic to fetch the price of the part from the backend or any other source
     return 10; // Dummy price for demonstration
   };
@@ -104,9 +98,9 @@ const NewOrder = () => {
     <React.Fragment>
       <div className={`new-order-container ${isHorizontalLayout ? "horizontal-layout" : "vertical-layout"}`}>
         <div className="new-order-form">
-      <Typography variant="h4" gutterBottom>
-        New Order
-      </Typography>
+          <Typography variant="h4" gutterBottom>
+            New Order
+          </Typography>
           <Autocomplete
             options={partsData.map((part) => part["part name"] + " : " + part["quantity"] + " available")}
             value={selectedPart}
