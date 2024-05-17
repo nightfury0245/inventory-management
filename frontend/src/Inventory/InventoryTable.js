@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -32,7 +32,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import QRCode from 'qrcode.react';
-
+import axios from 'axios'
 const downloadQRCode = (partName, id) => {
   const canvas = document.getElementById(`qr-${id}`);
   const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
@@ -80,8 +80,9 @@ function stableSort(array, comparator) {
 
 const headCells = [
   { id: 'partName', numeric: false, disablePadding: true, label: 'Part Name' },
-  { id: 'moi', numeric: false, disablePadding: false, label: 'MoI' },
+  { id: 'moi', numeric: false, disablePadding: false, label: 'Unit of Measurement' },
   { id: 'perPartPrice', numeric: true, disablePadding: false, label: 'Per Part Price' },
+  { id: 'quantity', numeric: true, disablePadding: false, label: 'Available Quantity' },
 ];
 
 function EnhancedTableHead(props) {
@@ -202,13 +203,7 @@ export default function InventoryTable() {
   const [page, setPage] = useState(0);
   const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [rows, setRows] = useState([
-    createData(1, 'Part A', '2023-05-01', 'MoI A', 10.0, null, null),
-    createData(2, 'Part B', '2023-05-02', 'MoI B', 20.0, null, null),
-    createData(3, 'Part C', '2023-05-03', 'MoI C', 30.0, null, null),
-    createData(4, 'Part D', '2023-05-04', 'MoI D', 40.0, null, null),
-    createData(5, 'Part E', '2023-05-05', 'MoI E', 50.0, null, null),
-  ]);
+  const [rows, setRows] = useState([]);
   const [open, setOpen] = useState(false);
   const [formValues, setFormValues] = useState([{
     partName: '',
@@ -219,8 +214,32 @@ export default function InventoryTable() {
   const [date, setDate] = useState('');
   const [invoiceFile, setInvoiceFile] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [detailRow, setDetailRow] = useState(null);
+  const [detailRow, setdetailRow] = useState([]);
   const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/getInventory');
+        if (response && response.data) {
+          setRows(response.data);
+        } else {
+          console.error('Empty response or invalid data received from API');
+        }
+      } catch (error) {
+        console.error('Error fetching inventory data:', error);
+      }
+    };
+
+    fetchData(); // Initial call
+
+    const interval = setInterval(fetchData, 5000); // Set up interval for every 5 seconds
+
+    return () => {
+      clearInterval(interval); // Clear interval on component unmount
+    };
+  }, []);
+
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -238,13 +257,13 @@ export default function InventoryTable() {
   };
 
   const handleClick = (event, row) => {
-    setDetailRow(row);
+    setdetailRow(row);
     setDetailOpen(true);
   };
 
   const handleDetailClose = () => {
     setDetailOpen(false);
-    setDetailRow(null);
+    setdetailRow(null);
     setEditMode(false);
   };
 
@@ -338,8 +357,8 @@ export default function InventoryTable() {
 
   const handleEditInputChange = (event) => {
     const { name, value, files } = event.target;
-    setDetailRow((prevDetailRow) => ({
-      ...prevDetailRow,
+    setdetailRow((prevdetailRow) => ({
+      ...prevdetailRow,
       [name]: files ? files[0] : value,
     }));
   };
@@ -374,7 +393,7 @@ export default function InventoryTable() {
                 {stableSort(rows, getComparator(order, orderBy))
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => {
-                    const isItemSelected = isSelected(row.partName);
+                    const isItemSelected = isSelected(row["Part Name"]);
                     const labelId = `enhanced-table-checkbox-${index}`;
 
                     return (
@@ -397,10 +416,11 @@ export default function InventoryTable() {
                           />
                        </TableCell>
                         <TableCell component="th" id={labelId} scope="row" padding="none">
-                          {row.partName}
+                          {row["Part Name"]}
                         </TableCell>
-                        <TableCell>{row.moi}</TableCell>
-                        <TableCell align="right">{row.perPartPrice}</TableCell>
+                        <TableCell>{row["Unit of Measurement"]}</TableCell>
+                        <TableCell align="right">{row["price per unit"]}</TableCell>
+                        <TableCell align="right">{row["available quantity"]}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -537,10 +557,10 @@ export default function InventoryTable() {
   <DialogContent>
     {detailRow && (
       <Box>
-        <Typography variant="h6">{detailRow.partName}</Typography>
-        <Typography variant="body1">Date: {detailRow.date}</Typography>
-        <Typography variant="body1">MoI: {detailRow.moi}</Typography>
-        <Typography variant="body1">Per Part Price: ${detailRow.perPartPrice}</Typography>
+        <Typography variant="h6">{detailRow["Part Name"]}</Typography>
+        <Typography variant="body1">Date: {detailRow["MFD"]}</Typography>
+        <Typography variant="body1">MoI: {detailRow["Unit of Measurement"]}</Typography>
+        <Typography variant="body1">Per Part Price: ${detailRow["price per unit"]}</Typography>
         <Box mt={2}>
           <Typography variant="body2">Invoice File:</Typography>
           {detailRow.invoiceFile ? (
@@ -560,10 +580,10 @@ export default function InventoryTable() {
           )}
         </Box>
         <Box mt={2} id={`qr-${detailRow.id}`}>
-          <QRCode value={`${detailRow.partName} (ID: ${detailRow.id})`} size={128} />
+          <QRCode value={`${detailRow["Part Name"]} (ID: ${detailRow.id})`} size={128} />
         </Box>
         <Box mt={2}>
-          <Button variant="contained" color="primary" onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}>
+          <Button variant="contained" color="primary" onClick={() => downloadQRCode(detailRow["Part Name"], detailRow.id)}>
             Download QR Code
           </Button>
         </Box>
@@ -583,7 +603,7 @@ export default function InventoryTable() {
           fullWidth
           variant="outlined"
           name="partName"
-          value={detailRow.partName}
+          value={detailRow["Part Name"]}
           onChange={handleEditInputChange}
         />
         <TextField
@@ -593,7 +613,7 @@ export default function InventoryTable() {
           fullWidth
           variant="outlined"
           name="moi"
-          value={detailRow.moi}
+          value={detailRow["Unit of Measurement"]}
           onChange={handleEditInputChange}
         />
         <TextField
@@ -603,7 +623,7 @@ export default function InventoryTable() {
           fullWidth
           variant="outlined"
           name="perPartPrice"
-          value={detailRow.perPartPrice}
+          value={detailRow["price per unit"]}
           onChange={handleEditInputChange}
         />
         <Box mt={2}>

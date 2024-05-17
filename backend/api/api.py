@@ -25,7 +25,7 @@ def getInventory():
 
     # Retrieve all documents from the collection
     documents = collection.find()
-
+    
     # Convert documents to JSON objects and store them in an array
     documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
     return documents_array

@@ -24,6 +24,7 @@ import TrackOrders from '../TrackOrders/TrackOrders';
 import Inventory from '../Inventory/Inventory';
 import GenerateLabel from '../GenerateLabel/GenerateLabel';
 import InventoryTable from '../Inventory/InventoryTable';
+import axios from 'axios';
 
 const drawerWidth = 240;
 
