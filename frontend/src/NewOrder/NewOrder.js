@@ -17,8 +17,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
-import { set } from "firebase/database";
-import axios from 'axios'
+import axios from 'axios';
 
 const NewOrder = () => {
   const [partsData, setPartsData] = useState([
@@ -29,12 +28,13 @@ const NewOrder = () => {
     { "Part Name": "Part E", "available quantity": 50 },
   ]);
   const [selectedPart, setSelectedPart] = useState("");
-  const [orderName, setorderName] = useState("");
+  const [orderName, setOrderName] = useState("");
   const [requiredQuantity, setRequiredQuantity] = useState(1);
   const [pricePerUnit, setPricePerUnit] = useState(-1);
   const [orderItems, setOrderItems] = useState([]);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [isHorizontalLayout, setIsHorizontalLayout] = useState(true);
+  const [uploadedImage, setUploadedImage] = useState(null); // New state for uploaded image
 
   useEffect(() => {
     const handleResize = () => {
@@ -119,15 +119,27 @@ const NewOrder = () => {
     }, 0);
   };
 
-  const getPricePerUnit = (partName) =>{
-    console.log("partname split" ,partName.split(':')[0]);
+  const getPricePerUnit = (partName) => {
+    console.log("partname split", partName.split(':')[0]);
     const partObj = partsData.find(part => part["Part Name"] === partName.split(':')[0].trim());
-    return partObj;
-}
+    return partObj ? partObj["price per unit"] : -1;
+  };
 
-const handlePlaceOrder  = () => {
-  console.log("Order placed");
-}
+  const handlePlaceOrder = () => {
+    console.log("Order placed");
+  };
+
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <React.Fragment>
       <div className={`new-order-container ${isHorizontalLayout ? "horizontal-layout" : "vertical-layout"}`}>
@@ -135,11 +147,27 @@ const handlePlaceOrder  = () => {
           <Typography variant="h4" gutterBottom>
             New Order
           </Typography>
+          {uploadedImage && (
+            <img src={uploadedImage} alt="Uploaded" className="uploaded-image" />
+          )}
+          <Button
+            variant="contained"
+            component="label"
+            style={{ marginBottom: 16 }}
+          >
+            Upload Image
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleImageUpload}
+            />
+          </Button>
           <TextField
             type="text"
             label="Order Name"
             value={orderName}
-            onChange={(event) => setorderName(event.target.value)}
+            onChange={(event) => setOrderName(event.target.value)}
             fullWidth
             variant="outlined"
             style={{ marginBottom: 16 }}
@@ -147,16 +175,15 @@ const handlePlaceOrder  = () => {
           <Autocomplete
             options={partsData.map((part) => part["Part Name"] + " : " + part["available quantity"] + " available")}
             value={selectedPart}
-            onChange={(event, newValue) => {setSelectedPart(newValue);
+            onChange={(event, newValue) => {
+              setSelectedPart(newValue);
               setPricePerUnit(getPricePerUnit(newValue));
-            }
-            }
+            }}
             renderInput={(params) => (
               <TextField {...params} label="Select Part" variant="outlined" />
             )}
             style={{ marginBottom: 16 }}
           />
-
           <TextField
             type="number"
             label="Required Quantity"
@@ -166,7 +193,6 @@ const handlePlaceOrder  = () => {
             variant="outlined"
             style={{ marginBottom: 16 }}
           />
-
           <Button
             variant="contained"
             onClick={handleAddPart}
@@ -205,7 +231,6 @@ const handlePlaceOrder  = () => {
               </TableBody>
             </Table>
           </TableContainer>
-
           <Button variant="contained" onClick={handleConfirmOrder}>
             Continue
           </Button>
@@ -247,7 +272,6 @@ const handlePlaceOrder  = () => {
               <Button onClick={handlePlaceOrder}>Place order</Button> {/* Call handlePlaceOrder function */}
             </DialogActions>
           </Dialog>
-
         </div>
       </div>
     </React.Fragment>

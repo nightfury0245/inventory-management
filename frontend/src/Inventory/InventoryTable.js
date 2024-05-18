@@ -33,16 +33,42 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import QRCode from 'qrcode.react';
 import axios from 'axios'
+
+
 const downloadQRCode = (partName, id) => {
-  const canvas = document.getElementById(`qr-${id}`);
-  const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-  let downloadLink = document.createElement('a');
-  downloadLink.href = pngUrl;
-  downloadLink.download = `${partName}-${id}.png`;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
+  const svgElement = document.getElementById(`qr-${id}`).querySelector('svg');
+  if (!svgElement) {
+    console.error('SVG element not found');
+    return;
+  }
+  
+  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+
+    const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+    const downloadLink = document.createElement('a');
+    downloadLink.href = pngUrl;
+    downloadLink.download = `${partName}-${id}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+  img.src = url;
 };
+
+
+
 
 function createData(id, partName, date, moi, perPartPrice, invoiceFile, imageFile) {
   return { id, partName, date, moi, perPartPrice, invoiceFile, imageFile };
@@ -366,10 +392,15 @@ export default function InventoryTable() {
   const generateQRCode = (partName, id) => {
     const qrCodeValue = `${partName} (ID: ${id})`;
     return (
-      <QRCode value={qrCodeValue} size={128} />
+      <QRCode
+        id={`qr-${id}`}
+        value={qrCodeValue}
+        size={128}
+        renderAs="svg"
+      />
     );
   };
-
+  
   return (
     <Box sx={{ width: '100%', overflowX: 'auto' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>

@@ -1,17 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import TableSortLabel from '@mui/material/TableSortLabel';
+import Checkbox from '@mui/material/Checkbox';
 import { visuallyHidden } from '@mui/utils';
 
 const headCells = [
   { id: 'partName', numeric: false, disablePadding: true, label: 'Part Name' },
-  { id: 'moi', numeric: false, disablePadding: false, label: 'MoI' },
+  { id: 'moi', numeric: false, disablePadding: false, label: 'Unit of Measurement' },
   { id: 'perPartPrice', numeric: true, disablePadding: false, label: 'Per Part Price' },
+  { id: 'quantity', numeric: true, disablePadding: false, label: 'Available Quantity' },
 ];
 
 function EnhancedTableHead(props) {

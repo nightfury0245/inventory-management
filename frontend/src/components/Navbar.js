@@ -21,9 +21,8 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
 import NewOrder from '../NewOrder/NewOrder';
 import TrackOrders from '../TrackOrders/TrackOrders';
-import Inventory from '../Inventory/Inventory';
-import GenerateLabel from '../GenerateLabel/GenerateLabel';
 import InventoryTable from '../Inventory/InventoryTable';
+import HistoryLog from '../HistoryLog/HistoryLog'; // Assume this is the new component
 import axios from 'axios';
 
 const drawerWidth = 240;
@@ -76,8 +75,13 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 export default function Navbar() {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
-  const [menu, setMenu] = useState([{ key: "new-order", value: "New order",component_name : "NewOrder" }, { key: "track-order", value: "Track Order", component_name : "TrackOrder" },{key: "inventory", value : "Inventory", component_name : "Inventory"},{key: "label", value : "Generate Label", component_name : "GenerateLabel"}]);
-  const [selected, setSelected] = useState("NewOrder");
+  const [menu, setMenu] = useState([
+    { key: "track-order", value: "Track Order", component_name: "TrackOrders" },
+    { key: "new-order", value: "New Order", component_name: "NewOrder" },
+    { key: "inventory", value: "Inventory", component_name: "Inventory" },
+    { key: "history-log", value: "History/Log", component_name: "HistoryLog" }
+  ]);
+  const [selected, setSelected] = useState("TrackOrders");
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -102,7 +106,7 @@ export default function Navbar() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Inventory management
+            Inventory Management
           </Typography>
         </Toolbar>
       </AppBar>
@@ -127,7 +131,7 @@ export default function Navbar() {
         <Divider />
         <List>
           {menu.map((item, index) => (
-            <ListItem key={item.key} disablePadding onClick={()=>setSelected(item.component_name)}>
+            <ListItem key={item.key} disablePadding onClick={() => setSelected(item.component_name)}>
               <ListItemButton>
                 <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
@@ -136,17 +140,14 @@ export default function Navbar() {
                 <ListItemText primary={item.value} />
               </ListItemButton>
             </ListItem>
-
           ))}
         </List>
-
       </Drawer>
       <Main open={open}>
-          {selected === "NewOrder" && <NewOrder />}
-          {selected === "TrackOrder" && <TrackOrders />}
-          {/* {selected === "Inventory" && <Inventory />} */}
-          {selected === "Inventory" && <InventoryTable />}
-          {selected === "GenerateLabel" && <GenerateLabel />}
+        {selected === "TrackOrders" && <TrackOrders />}
+        {selected === "NewOrder" && <NewOrder />}
+        {selected === "Inventory" && <InventoryTable />}
+        {selected === "HistoryLog" && <HistoryLog />}
       </Main>
     </Box>
   );

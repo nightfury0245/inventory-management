@@ -1,0 +1,18 @@
+{
+  "pumpImages": [
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PumpImages\\centrifugal-pumps.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PumpImages\\images (1).jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PumpImages\\images (2).jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PumpImages\\images.jpg"
+  ],
+  "partImages": [
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\bolted-hydraulic-cylinder.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\electric-actuator.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\gearbox.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\images.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\linear-bearings.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\pngtree-mechanical-metal-gear-parts-collection-png-image_697855.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\rigid-coupling.jpg",
+    "C:\\Users\\91887\\Desktop\\Work\\1Project\\Inventory-KSG\\Inventory-management-app\\inventory-management\\frontend\\public\\DummyImages\\PartImages\\single-spring-mechanical-seal.jpg"
+  ]
+}
