@@ -91,6 +91,12 @@ export default function Navbar({ onLogout }) {
     setOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('username');
+    localStorage.removeItem('password');
+    onLogout();
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -108,7 +114,7 @@ export default function Navbar({ onLogout }) {
           <Typography variant="h6" noWrap component="div">
             Inventory Management
           </Typography>
-          <Button color="inherit" onClick={onLogout} sx={{ ml: 'auto' }}>
+          <Button color="inherit" onClick={handleLogout} sx={{ ml: 'auto' }}>
             Logout
           </Button>
         </Toolbar>

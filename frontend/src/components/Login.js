@@ -1,15 +1,26 @@
 // src/components/Login.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('username');
+    const savedPassword = localStorage.getItem('password');
+    if (savedUsername && savedPassword) {
+      setUsername(savedUsername);
+      setPassword(savedPassword);
+    }
+  }, []);
+
   const handleLogin = () => {
     // Replace this with your actual authentication logic
     if (username === 'user' && password === 'password') {
+      localStorage.setItem('username', username);
+      localStorage.setItem('password', password);
       onLogin(true);
     } else {
       alert('Invalid credentials');
