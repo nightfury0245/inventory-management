@@ -1,5 +1,6 @@
-import * as React from 'react';
-import { useState } from 'react';
+// src/components/Navbar.js
+
+import React, { useState } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -19,11 +20,11 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
+import Button from '@mui/material/Button';
 import NewOrder from '../NewOrder/NewOrder';
 import TrackOrders from '../TrackOrders/TrackOrders';
 import InventoryTable from '../Inventory/InventoryTable';
-import HistoryLog from '../HistoryLog/HistoryLog'; // Assume this is the new component
-import axios from 'axios';
+import HistoryLog from '../HistoryLog/HistoryLog';
 
 const drawerWidth = 240;
 
@@ -67,14 +68,13 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
   ...theme.mixins.toolbar,
   justifyContent: 'flex-end',
 }));
 
-export default function Navbar() {
+export default function Navbar({ onLogout }) {
   const theme = useTheme();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState([
     { key: "track-order", value: "Track Order", component_name: "TrackOrders" },
     { key: "new-order", value: "New Order", component_name: "NewOrder" },
@@ -108,6 +108,9 @@ export default function Navbar() {
           <Typography variant="h6" noWrap component="div">
             Inventory Management
           </Typography>
+          <Button color="inherit" onClick={onLogout} sx={{ ml: 'auto' }}>
+            Logout
+          </Button>
         </Toolbar>
       </AppBar>
       <Drawer
