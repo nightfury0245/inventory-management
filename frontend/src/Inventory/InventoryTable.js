@@ -3,15 +3,8 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
-import Toolbar from '@mui/material/Toolbar';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
@@ -32,7 +25,8 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import QRCode from 'qrcode.react';
-import axios from 'axios'
+import axios from 'axios';
+import Toolbar from '@mui/material/Toolbar'; // Add this line
 
 
 const downloadQRCode = (partName, id) => {
@@ -67,16 +61,11 @@ const downloadQRCode = (partName, id) => {
   img.src = url;
 };
 
-
-
-
-function createData(id, partName, date, moi, perPartPrice, invoiceFile, imageFile) {
+const createData = (id, partName, date, moi, perPartPrice, invoiceFile, imageFile) => {
   return { id, partName, date, moi, perPartPrice, invoiceFile, imageFile };
 }
 
-
-
-function descendingComparator(a, b, orderBy) {
+const descendingComparator = (a, b, orderBy) => {
   if (b[orderBy] < a[orderBy]) {
     return -1;
   }
@@ -86,13 +75,13 @@ function descendingComparator(a, b, orderBy) {
   return 0;
 }
 
-function getComparator(order, orderBy) {
+const getComparator = (order, orderBy) => {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-function stableSort(array, comparator) {
+const stableSort = (array, comparator) => {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
     const order = comparator(a[0], b[0]);
@@ -110,59 +99,6 @@ const headCells = [
   { id: 'perPartPrice', numeric: true, disablePadding: false, label: 'Per Part Price' },
   { id: 'quantity', numeric: true, disablePadding: false, label: 'Available Quantity' },
 ];
-
-function EnhancedTableHead(props) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property);
-  };
-
-  return (
-    <TableHead>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="primary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{ 'aria-label': 'select all parts' }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
-            padding={headCell.disablePadding ? 'none' : 'normal'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-EnhancedTableHead.propTypes = {
-  numSelected: PropTypes.number.isRequired,
-  onRequestSort: PropTypes.func.isRequired,
-  onSelectAllClick: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(['asc', 'desc']).isRequired,
-  orderBy: PropTypes.string.isRequired,
-  rowCount: PropTypes.number.isRequired,
-};
 
 function EnhancedTableToolbar(props) {
   const { numSelected, handleAddClick } = props;
@@ -222,6 +158,46 @@ EnhancedTableToolbar.propTypes = {
   handleAddClick: PropTypes.func.isRequired,
 };
 
+function InventoryCard(props) {
+  const { row, handleClick, isSelected } = props;
+  const labelId = `inventory-card-${row.id}`;
+
+  return (
+    <Card
+      sx={{ minWidth: 275, marginBottom: 2, cursor: 'pointer' }}
+      onClick={(event) => handleClick(event, row)}
+    >
+      <CardContent>
+        <Checkbox
+          color="primary"
+          checked={isSelected}
+          inputProps={{
+            'aria-labelledby': labelId,
+          }}
+        />
+        <Typography variant="h6" component="div">
+          {row.partName}
+        </Typography>
+        <Typography color="text.secondary">
+          Unit of Measurement: {row.moi}
+        </Typography>
+        <Typography variant="body2">
+          Per Part Price: ${row.perPartPrice}
+        </Typography>
+        <Typography variant="body2">
+          Available Quantity: {row.quantity}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
+InventoryCard.propTypes = {
+  row: PropTypes.object.isRequired,
+  handleClick: PropTypes.func.isRequired,
+  isSelected: PropTypes.bool.isRequired,
+};
+
 export default function InventoryTable() {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('partName');
@@ -266,7 +242,6 @@ export default function InventoryTable() {
     };
   }, []);
 
-
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -275,7 +250,7 @@ export default function InventoryTable() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.partName);
+      const newSelecteds = rows.map((n) => n.id);
       setSelected(newSelecteds);
       return;
     }
@@ -283,14 +258,25 @@ export default function InventoryTable() {
   };
 
   const handleClick = (event, row) => {
+    const selectedIndex = selected.indexOf(row.id);
+    let newSelected = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, row.id);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1),
+      );
+    }
+
+    setSelected(newSelected);
     setdetailRow(row);
     setDetailOpen(true);
-  };
-
-  const handleDetailClose = () => {
-    setDetailOpen(false);
-    setdetailRow(null);
-    setEditMode(false);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -306,400 +292,196 @@ export default function InventoryTable() {
     setDense(event.target.checked);
   };
 
-  const handleAddClick = () => {
-    setOpen(true);
-  };
-
   const handleClose = () => {
     setOpen(false);
-    setFormValues([{
+    setEditMode(false);
+    setFormValues({
       partName: '',
       moi: '',
       perPartPrice: '',
       imageFile: null,
-    }]);
-    setDate('');
-    setInvoiceFile(null);
-  };
-
-  const handleInputChange = (index, event) => {
-    const newFormValues = [...formValues];
-    const { name, value, files } = event.target;
-    newFormValues[index][name] = files ? files[0] : value;
-    setFormValues(newFormValues);
-  };
-
-  const handleDateChange = (event) => {
-    setDate(event.target.value);
-  };
-
-  const handleInvoiceFileChange = (event) => {
-    setInvoiceFile(event.target.files[0]);
-  };
-
-  const handleAddRow = () => {
-    setFormValues([...formValues, {
-      partName: '',
-      moi: '',
-      perPartPrice: '',
-      imageFile: null,
-    }]);
-  };
-
-  const handleRemoveRow = (index) => {
-    const newFormValues = [...formValues];
-    newFormValues.splice(index, 1);
-    setFormValues(newFormValues);
-  };
-
-  const handleSave = () => {
-    const newRows = formValues.map((formValue) => createData(Date.now(), formValue.partName, date, formValue.moi, formValue.perPartPrice, invoiceFile, formValue.imageFile));
-    setRows([...rows, ...newRows]);
-    setFormValues([{
-      partName: '',
-      moi: '',
-      perPartPrice: '',
-      imageFile: null,
-    }]);
-    setDate('');
-    setInvoiceFile(null);
-    setOpen(false);
-  };
-
-  const handleEditSave = () => {
-    const updatedRows = rows.map((row) => {
-      if (row.id === detailRow.id) {
-        return { ...row, ...detailRow };
-      }
-      return row;
     });
-    setRows(updatedRows);
-    handleDetailClose();
   };
 
-  const isSelected = (name) => selected.indexOf(name) !== -1;
-
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
-  const handleEditInputChange = (event) => {
-    const { name, value, files } = event.target;
-    setdetailRow((prevdetailRow) => ({
-      ...prevdetailRow,
-      [name]: files ? files[0] : value,
-    }));
+  const handleAddClick = () => {
+    setOpen(true);
+    setEditMode(false);
   };
 
-  const generateQRCode = (partName, id) => {
-    const qrCodeValue = `${partName} (ID: ${id})`;
-    return (
-      <QRCode
-        id={`qr-${id}`}
-        value={qrCodeValue}
-        size={128}
-        renderAs="svg"
-      />
-    );
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const data = new FormData();
+    data.append('partName', formValues.partName);
+    data.append('moi', formValues.moi);
+    data.append('perPartPrice', formValues.perPartPrice);
+    data.append('date', date);
+    data.append('invoiceFile', invoiceFile);
+    data.append('imageFile', formValues.imageFile);
+
+    try {
+      let response;
+      if (editMode) {
+        response = await axios.put(`http://127.0.0.1:5000/updateInventory/${formValues.id}`, data);
+      } else {
+        response = await axios.post('http://127.0.0.1:5000/addInventory', data);
+      }
+      console.log(response.data);
+      setOpen(false);
+      setEditMode(false);
+      setFormValues({
+        partName: '',
+        moi: '',
+        perPartPrice: '',
+        imageFile: null,
+      });
+    } catch (error) {
+      console.error('Error adding/updating inventory:', error);
+    }
   };
-  
+
+  const handleDetailClose = () => {
+    setDetailOpen(false);
+  };
+
+  const isSelected = (id) => selected.indexOf(id) !== -1;
+
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
-      <Paper sx={{ width: '100%', mb: 2 }}>
+    <Box sx={{ width: '100%' }}>
+      <Paper sx={{ mb: 2 }}>
         <EnhancedTableToolbar numSelected={selected.length} handleAddClick={handleAddClick} />
-        <Box sx={{ overflowX: 'auto', padding: '8px' }}>
-          <TableContainer>
-            <Table
-              sx={{ minWidth: 750, maxWidth: '100%' }}
-              aria-labelledby="tableTitle"
-              size={dense ? 'small' : 'medium'}
-            >
-            <EnhancedTableHead
-                numSelected={selected.length}
-                order={order}
-                orderBy={orderBy}
-                onSelectAllClick={handleSelectAllClick}
-                onRequestSort={handleRequestSort}
-                rowCount={rows.length}
-              />
-            <TableBody>
-                {stableSort(rows, getComparator(order, orderBy))
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => {
-                    const isItemSelected = isSelected(row["Part Name"]);
-                    const labelId = `enhanced-table-checkbox-${index}`;
-
-                    return (
-                      <TableRow
-                        hover
-                        onClick={(event) => handleClick(event, row)}
-                        role="checkbox"
-                        aria-checked={isItemSelected}
-                        tabIndex={-1}
-                        key={row.id}
-                        selected={isItemSelected}
-                      >
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            color="primary"
-                            checked={isItemSelected}
-                            inputProps={{
-                              'aria-labelledby': labelId,
-                            }}
-                          />
-                       </TableCell>
-                        <TableCell component="th" id={labelId} scope="row" padding="none">
-                          {row["Part Name"]}
-                        </TableCell>
-                        <TableCell>{row["Unit of Measurement"]}</TableCell>
-                        <TableCell align="right">{row["price per unit"]}</TableCell>
-                        <TableCell align="right">{row["available quantity"]}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-             {emptyRows > 0 && (
-                  <TableRow
-                    style={{
-                      height: (dense ? 33 : 53) * emptyRows,
-                    }}
-                  >
-                    <TableCell colSpan={6} />
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', padding: '8px' }}>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={rows.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            sx={{ flex: '1 1 auto', padding: '8px' }}
-          />
+        <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          {stableSort(rows, getComparator(order, orderBy))
+            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+            .map((row, index) => {
+              const isItemSelected = isSelected(row.id);
+              return (
+                <InventoryCard
+                  key={row.id}
+                  row={row}
+                  handleClick={handleClick}
+                  isSelected={isItemSelected}
+                />
+              );
+            })}
         </Box>
       </Paper>
       <FormControlLabel
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
       />
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>Add New Part</DialogTitle>
+
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{editMode ? 'Edit Inventory' : 'Add Inventory'}</DialogTitle>
         <DialogContent>
-          <TextField
-            margin="dense"
-            label="Date"
-            type="date"
-            fullWidth
-            variant="outlined"
-            name="date"
-            InputLabelProps={{ shrink: true }}
-            value={date}
-            onChange={handleDateChange}
-          />
-          <Button
-            variant="contained"
-            component="label"
-            startIcon={<AttachFileIcon />}
-            sx={{ mt: 2, mb: 1 }}
-          >
-            Upload Invoice
-            <input
-              type="file"
-              hidden
-              name="invoiceFile"
-              onChange={handleInvoiceFileChange}
+          <Box component="form" noValidate onSubmit={handleSubmit}>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="partName"
+              label="Part Name"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={formValues.partName}
+              onChange={(e) => setFormValues({ ...formValues, partName: e.target.value })}
             />
-          </Button>
-          {formValues.map((formValue, index) => (
-            <Box key={index} mb={2}>
-              <TextField
-                margin="dense"
-                label="Part Name"
-                type="text"
-                fullWidth
-                variant="outlined"
-                name="partName"
-                value={formValue.partName}
-                onChange={(event) => handleInputChange(index, event)}
+            <TextField
+              margin="dense"
+              id="moi"
+              label="Unit of Measurement"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={formValues.moi}
+              onChange={(e) => setFormValues({ ...formValues, moi: e.target.value })}
+            />
+            <TextField
+              margin="dense"
+              id="perPartPrice"
+              label="Per Part Price"
+              type="number"
+              fullWidth
+              variant="outlined"
+              value={formValues.perPartPrice}
+              onChange={(e) => setFormValues({ ...formValues, perPartPrice: e.target.value })}
+            />
+            <TextField
+              margin="dense"
+              id="date"
+              label="Date"
+              type="date"
+              fullWidth
+              variant="outlined"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<AttachFileIcon />}
+              sx={{ mt: 2 }}
+            >
+              Upload Invoice File
+              <input
+                type="file"
+                hidden
+                onChange={(e) => setInvoiceFile(e.target.files[0])}
               />
-              <TextField
-                margin="dense"
-                label="MoI"
-                type="text"
-                fullWidth
-                variant="outlined"
-                name="moi"
-                value={formValue.moi}
-                onChange={(event) => handleInputChange(index, event)}
+            </Button>
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<ImageIcon />}
+              sx={{ mt: 2, ml: 2 }}
+            >
+              Upload Image File
+              <input
+                type="file"
+                hidden
+                onChange={(e) => setFormValues({ ...formValues, imageFile: e.target.files[0] })}
               />
-              <TextField
-                margin="dense"
-                label="Per Part Price"
-                type="number"
-                fullWidth
-                variant="outlined"
-                name="perPartPrice"
-                value={formValue.perPartPrice}
-                onChange={(event) => handleInputChange(index, event)}
-              />
-              <Button
-                variant="contained"
-                component="label"
-                startIcon={<ImageIcon />}
-                sx={{ mt: 2, mb: 1, ml: 2 }}
-              >
-                Upload Image
-                <input
-                  type="file"
-                  hidden
-                  name="imageFile"
-                  onChange={(event) => handleInputChange(index, event)}
-                />
-              </Button>
-              <Box mt={2}>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={() => handleRemoveRow(index)}
-                >
-                  Remove
-                </Button>
-              </Box>
-            </Box>
-          ))}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleAddRow}
-          >
-            Add Another Part
-          </Button>
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {editMode ? 'Save' : 'Add'}
+          </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={detailOpen} onClose={handleDetailClose} maxWidth="sm" fullWidth>
-  <DialogTitle>Part Details</DialogTitle>
-  <DialogContent>
-    {detailRow && (
-      <Box>
-        <Typography variant="h6">{detailRow["Part Name"]}</Typography>
-        <Typography variant="body1">Date: {detailRow["MFD"]}</Typography>
-        <Typography variant="body1">MoI: {detailRow["Unit of Measurement"]}</Typography>
-        <Typography variant="body1">Per Part Price: ${detailRow["price per unit"]}</Typography>
-        <Box mt={2}>
-          <Typography variant="body2">Invoice File:</Typography>
-          {detailRow.invoiceFile ? (
-            <Button variant="contained" component="a" href={URL.createObjectURL(detailRow.invoiceFile)} download>
-              Download Invoice
-            </Button>
-          ) : (
-            <Typography variant="body2">No Invoice File Uploaded</Typography>
-          )}
-        </Box>
-        <Box mt={2}>
-          <Typography variant="body2">Image File:</Typography>
-          {detailRow.imageFile ? (
-            <Box component="img" src={URL.createObjectURL(detailRow.imageFile)} alt="Part Image" sx={{ width: '100%', maxHeight: 300 }} />
-          ) : (
-            <Typography variant="body2">No Image File Uploaded</Typography>
-          )}
-        </Box>
-        <Box mt={2} id={`qr-${detailRow.id}`}>
-          <QRCode value={`${detailRow["Part Name"]} (ID: ${detailRow.id})`} size={128} />
-        </Box>
-        <Box mt={2}>
-          <Button variant="contained" color="primary" onClick={() => downloadQRCode(detailRow["Part Name"], detailRow.id)}>
+
+      <Dialog open={detailOpen} onClose={handleDetailClose}>
+        <DialogTitle>Part Details</DialogTitle>
+        <DialogContent>
+          <Typography variant="h6" component="div">
+            {detailRow.partName}
+          </Typography>
+          <Typography color="text.secondary">
+            Unit of Measurement: {detailRow.moi}
+          </Typography>
+          <Typography variant="body2">
+            Per Part Price: ${detailRow.perPartPrice}
+          </Typography>
+          <Typography variant="body2">
+            Available Quantity: {detailRow.quantity}
+          </Typography>
+          <QRCode id={`qr-${detailRow.id}`} value={JSON.stringify(detailRow)} size={256} level="H" includeMargin />
+          <Button
+            variant="contained"
+            startIcon={<AttachFileIcon />}
+            sx={{ mt: 2 }}
+            onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}
+          >
             Download QR Code
           </Button>
-        </Box>
-        <Box mt={2}>
-          <Button variant="contained" color="primary" onClick={() => setEditMode(true)}>
-            Edit
-          </Button>
-        </Box>
-      </Box>
-    )}
-    {editMode && detailRow && (
-      <Box mt={2}>
-        <TextField
-          margin="dense"
-          label="Part Name"
-          type="text"
-          fullWidth
-          variant="outlined"
-          name="partName"
-          value={detailRow["Part Name"]}
-          onChange={handleEditInputChange}
-        />
-        <TextField
-          margin="dense"
-          label="MoI"
-          type="text"
-          fullWidth
-          variant="outlined"
-          name="moi"
-          value={detailRow["Unit of Measurement"]}
-          onChange={handleEditInputChange}
-        />
-        <TextField
-          margin="dense"
-          label="Per Part Price"
-          type="number"
-          fullWidth
-          variant="outlined"
-          name="perPartPrice"
-          value={detailRow["price per unit"]}
-          onChange={handleEditInputChange}
-        />
-        <Box mt={2}>
-          <Button
-            variant="contained"
-            component="label"
-            startIcon={<AttachFileIcon />}
-          >
-            Upload Invoice
-            <input
-              type="file"
-              hidden
-              name="invoiceFile"
-              onChange={handleEditInputChange}
-            />
-          </Button>
-        </Box>
-        <Box mt={2}>
-          <Button
-            variant="contained"
-            component="label"
-            startIcon={<ImageIcon />}
-          >
-            Upload Image
-            <input
-              type="file"
-              hidden
-              name="imageFile"
-              onChange={handleEditInputChange}
-            />
-          </Button>
-        </Box>
-        <Box mt={2}>
-          <Button variant="contained" color="primary" onClick={handleEditSave}>
-            Save
-          </Button>
-          <Button variant="contained" color="secondary" onClick={handleDetailClose}>
-            Cancel
-          </Button>
-        </Box>
-      </Box>
-    )}
-  </DialogContent>
-</Dialog>
-
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDetailClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
