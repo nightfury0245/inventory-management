@@ -18,44 +18,14 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import QRCode from 'qrcode.react';
 import axios from 'axios';
 import Toolbar from '@mui/material/Toolbar';
-import Grid from '@mui/material/Grid'; // Import Grid
-
-const downloadQRCode = (partName, id) => {
-  const svgElement = document.getElementById(`qr-${id}`).querySelector('svg');
-  if (!svgElement) {
-    console.error('SVG element not found');
-    return;
-  }
-
-  const svgData = new XMLSerializer().serializeToString(svgElement);
-  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-
-  img.onload = () => {
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-    URL.revokeObjectURL(url);
-
-    const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
-    const downloadLink = document.createElement('a');
-    downloadLink.href = pngUrl;
-    downloadLink.download = `${partName}-${id}.png`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  };
-  img.src = url;
-};
+import Grid from '@mui/material/Grid';
 
 const createData = (id, partName, date, moi, perPartPrice, invoiceFile, imageFile) => {
   return { id, partName, date, moi, perPartPrice, invoiceFile, imageFile };
@@ -160,6 +130,52 @@ function InventoryCard(props) {
   );
 }
 
+const downloadQRCode = (partName, id) => {
+  setTimeout(() => {
+    const svgContainer = document.getElementById(`qr-${id}`);
+    if (!svgContainer) {
+      console.error(`Container for QR code with id ${id} not found`);
+      return;
+    }
+
+    const svgElement = svgContainer.querySelector('svg');
+    if (!svgElement) {
+      console.error('SVG element not found');
+      return;
+    }
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.src = url;
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      URL.revokeObjectURL(url);
+
+      const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${partName}-${id}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    };
+
+    img.onerror = (err) => {
+      console.error('Error loading the SVG image:', err);
+    };
+  }, 100);
+};
+
 InventoryCard.propTypes = {
   row: PropTypes.object.isRequired,
   handleClick: PropTypes.func.isRequired,
@@ -172,18 +188,21 @@ export default function InventoryTable() {
   const [orderBy, setOrderBy] = useState('partName');
   const [rows, setRows] = useState([]);
   const [open, setOpen] = useState(false);
-  const [formValues, setFormValues] = useState({
+  const [parts, setParts] = useState([{
     id: '',
     partName: '',
     moi: '',
     perPartPrice: '',
     imageFile: null,
-  });
+    quantity: '',
+    invoiceNumber: '',
+  }]);
   const [date, setDate] = useState('');
   const [invoiceFile, setInvoiceFile] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRow, setDetailRow] = useState({});
   const [editMode, setEditMode] = useState(false);
+  const [showPartForm, setShowPartForm] = useState(false); // New state for showing part form
 
   useEffect(() => {
     const fetchData = async () => {
@@ -214,6 +233,14 @@ export default function InventoryTable() {
     setOrderBy(property);
   };
 
+  const handleInvoiceFileUpload = (event) => {
+    setInvoiceFile(event.target.files[0]);
+  };
+
+  const handleDetailClose = () => {
+    setDetailOpen(false);
+  };
+
   const handleClick = (event, row) => {
     setDetailRow(row);
     setDetailOpen(true);
@@ -221,7 +248,7 @@ export default function InventoryTable() {
 
   const handleEdit = (event, row) => {
     event.stopPropagation();
-    setFormValues(row);
+    setParts([row]);
     setDate(row.date);
     setInvoiceFile(row.invoiceFile);
     setOpen(true);
@@ -241,180 +268,230 @@ export default function InventoryTable() {
   const handleClose = () => {
     setOpen(false);
     setEditMode(false);
-    setFormValues({
+    setParts([{
       id: '',
       partName: '',
       moi: '',
       perPartPrice: '',
       imageFile: null,
-    });
+      quantity: '',
+      invoiceNumber: '',
+    }]);
+    setDate('');
+    setInvoiceFile(null);
+  };
+
+  const handleSave = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('parts', JSON.stringify(parts));
+      formData.append('date', date);
+      if (invoiceFile) {
+        formData.append('invoiceFile', invoiceFile);
+      }
+
+      if (editMode) {
+        await axios.put(`http://127.0.0.1:5000/updateInventory/${parts[0].id}`, formData);
+        setRows((prevRows) =>
+          prevRows.map((row) => (row.id === parts[0].id ? { ...row, ...parts[0], date, invoiceFile } : row))
+        );
+      } else {
+        const response = await axios.post('http://127.0.0.1:5000/addInventory', formData);
+        const newPart = response.data;
+        setRows((prevRows) => [...prevRows, newPart]);
+      }
+
+      handleClose();
+    } catch (error) {
+      console.error('Error saving inventory:', error);
+    }
   };
 
   const handleAddClick = () => {
-    setOpen(true);
-    setEditMode(false);
+    setShowPartForm(true); // Show part form when Add Part button is clicked
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handlePartChange = (index, event) => {
+    const { name, value, files } = event.target;
+    const updatedParts = [...parts];
+    if (name === 'imageFile') {
+      updatedParts[index][name] = files[0];
+    } else {
+      updatedParts[index][name] = value;
+    }
+    setParts(updatedParts);
+  };
 
-    const data = new FormData();
-    data.append('partName', formValues.partName);
-    data.append('moi', formValues.moi);
-    data.append('perPartPrice', formValues.perPartPrice);
-    data.append('date', date);
-    data.append('invoiceFile', invoiceFile);
-    data.append('imageFile', formValues.imageFile);
-
-    try {
-      let response;
-      if (editMode) {
-        response = await axios.put(`http://127.0.0.1:5000/updateInventory/${formValues.id}`, data);
-      } else {
-        response = await axios.post('http://127.0.0.1:5000/addInventory', data);
-      }
-      console.log(response.data);
-      setOpen(false);
-      setEditMode(false);
-      setFormValues({
+  const handleAddPart = () => {
+    setParts([
+      ...parts,
+      {
         id: '',
         partName: '',
         moi: '',
         perPartPrice: '',
         imageFile: null,
-      });
-    } catch (error) {
-      console.error('Error adding/updating inventory:', error);
-    }
+        quantity: '',
+        invoiceNumber: '',
+      },
+    ]);
   };
 
-  const handleDetailClose = () => {
-    setDetailOpen(false);
+  const handleRemovePart = (index) => {
+    const updatedParts = [...parts];
+    updatedParts.splice(index, 1);
+    setParts(updatedParts);
   };
 
   return (
-    <Box sx={{ width: '100%', mt: 4 }}> {/* Add spacing from the top */}
+    <Box sx={{ width: '100%' }}>
       <Paper sx={{ mb: 2 }}>
         <EnhancedTableToolbar handleAddClick={handleAddClick} />
-        <Box sx={{ p: 2 }}>
-          <Grid container spacing={2}> {/* Grid container */}
-            {stableSort(rows, getComparator(order, orderBy)).map((row) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={row.id}> {/* Grid item with responsive columns */}
-                <InventoryCard
-                  row={row}
-                  handleClick={handleClick}
-                  handleEdit={handleEdit}
-                  handleDelete={handleDelete}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
+        <Grid container spacing={2} sx={{ p: 2 }}>
+          {stableSort(rows, getComparator(order, orderBy)).map((row) => (
+            <Grid item xs={12} md={6} lg={4} key={row.id}>
+              <InventoryCard row={row} handleClick={handleClick} handleEdit={handleEdit} handleDelete={handleDelete} />
+            </Grid>
+          ))}
+        </Grid>
       </Paper>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{editMode ? 'Edit Inventory' : 'Add Inventory'}</DialogTitle>
+      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+        <DialogTitle>{editMode ? 'Edit Inventory Part' : 'Add Inventory Part'}</DialogTitle>
         <DialogContent>
-          <Box component="form" noValidate onSubmit={handleSubmit}>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="partName"
-              label="Part Name"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={formValues.partName}
-              onChange={(e) => setFormValues({ ...formValues, partName: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              id="moi"
-              label="Unit of Measurement"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={formValues.moi}
-              onChange={(e) => setFormValues({ ...formValues, moi: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              id="perPartPrice"
-              label="Per Part Price"
-              type="number"
-              fullWidth
-              variant="outlined"
-              value={formValues.perPartPrice}
-              onChange={(e) => setFormValues({ ...formValues, perPartPrice: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              id="date"
-              label="Date"
-              type="date"
-              fullWidth
-              variant="outlined"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<AttachFileIcon />}
-              sx={{ mt: 2 }}
-            >
-              Upload Invoice File
-              <input
-                type="file"
-                hidden
-                onChange={(e) => setInvoiceFile(e.target.files[0])}
+          {parts.map((part, index) => (
+            <Box key={index} sx={{ mb: 2 }}>
+              <TextField
+                autoFocus
+                margin="dense"
+                name="partName"
+                label="Part Name"
+                type="text"
+                fullWidth
+                variant="standard"
+                value={part.partName}
+                onChange={(e) => handlePartChange(index, e)}
               />
-            </Button>
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<ImageIcon />}
-              sx={{ mt: 2, ml: 2 }}
-            >
-              Upload Image File
-              <input
-                type="file"
-                hidden
-                onChange={(e) => setFormValues({ ...formValues, imageFile: e.target.files[0] })}
+              <TextField
+                margin="dense"
+                name="moi"
+                label="Unit of Measurement"
+                type="text"
+                fullWidth
+                variant="standard"
+                value={part.moi}
+                onChange={(e) => handlePartChange(index, e)}
               />
+              <TextField
+                margin="dense"
+                name="perPartPrice"
+                label="Per Part Price"
+                type="number"
+                fullWidth
+                variant="standard"
+                value={part.perPartPrice}
+                onChange={(e) => handlePartChange(index, e)}
+              />
+              <TextField
+                margin="dense"
+                name="quantity"
+                label="Quantity"
+                type="number"
+                fullWidth
+                variant="standard"
+                value={part.quantity}
+                onChange={(e) => handlePartChange(index, e)}
+              />
+              <TextField
+                margin="dense"
+                name="invoiceNumber"
+                label="Invoice Number"
+                type="text"
+                fullWidth
+                variant="standard"
+                value={part.invoiceNumber}
+                onChange={(e) => handlePartChange(index, e)}
+              />
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id={`image-file-${index}`}
+                type="file"
+                name="imageFile"
+                onChange={(e) => handlePartChange(index, e)}
+              />
+              <label htmlFor={`image-file-${index}`}>
+                <Button variant="contained" component="span">
+                  Upload Image
+                  <AttachFileIcon />
+                </Button>
+                {part.imageFile && <span>{part.imageFile.name}</span>}
+              </label>
+              <Button onClick={() => handleRemovePart(index)} variant="outlined" color="secondary" sx={{ mt: 2 }}>
+                Remove Part
+              </Button>
+            </Box>
+          ))}
+          <Button onClick={handleAddPart} variant="outlined" sx={{ mt: 2 }}>
+            Add Another Part
+          </Button>
+          <TextField
+            margin="dense"
+            name="date"
+            label="Date"
+            type="date"
+            fullWidth
+            variant="standard"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <input
+            accept="application/pdf"
+            style={{ display: 'none' }}
+            id="invoice-file"
+            type="file"
+            name="invoiceFile"
+            onChange={handleInvoiceFileUpload}
+          />
+          <label htmlFor="invoice-file">
+            <Button variant="contained" component="span">
+              Upload Invoice
+              <AttachFileIcon />
             </Button>
-          </Box>
+            {invoiceFile && <span>{invoiceFile.name}</span>}
+          </label>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
-            {editMode ? 'Save' : 'Add'}
+          <Button onClick={handleClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleSave} color="primary">
+            Save
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={detailOpen} onClose={handleDetailClose}>
+      <Dialog open={detailOpen} onClose={handleDetailClose} maxWidth="md" fullWidth>
         <DialogTitle>Part Details</DialogTitle>
         <DialogContent>
-          <Typography variant="h6" component="div">
-            {detailRow.partName}
-          </Typography>
-          <Typography variant="body2">
-            Available Quantity: {detailRow.quantity}
-          </Typography>
-          <QRCode id={`qr-${detailRow.id}`} value={JSON.stringify(detailRow)} size={256} level="H" includeMargin />
-          <Button
-            variant="contained"
-            startIcon={<AttachFileIcon />}
-            sx={{ mt: 2 }}
-            onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}
-          >
-            Download QR Code
-          </Button>
+          <Typography variant="h6">Part Name: {detailRow.partName}</Typography>
+          <Typography variant="body1">Unit of Measurement: {detailRow.moi}</Typography>
+          <Typography variant="body1">Per Part Price: ${detailRow.perPartPrice}</Typography>
+          <Typography variant="body1">Available Quantity: {detailRow.quantity}</Typography>
+          <Box sx={{ mt: 2 }}>
+            <QRCode value={JSON.stringify(detailRow)} id={`qr-${detailRow.id}`} />
+            <Button variant="contained" onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}>
+              Download QR Code
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDetailClose}>Close</Button>
+          <Button onClick={handleDetailClose} color="primary">
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
