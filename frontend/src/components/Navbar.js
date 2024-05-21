@@ -17,7 +17,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
+import ListItemText from '@mui/material/ListItemText'; // Importing ListItemText
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
 import Button from '@mui/material/Button';
@@ -25,6 +25,8 @@ import NewOrder from '../NewOrder/NewOrder';
 import TrackOrders from '../TrackOrders/TrackOrders';
 import InventoryTable from '../Inventory/InventoryTable';
 import HistoryLog from '../HistoryLog/HistoryLog';
+import AddPartForm from '../AddPartForm/AddPartForm';
+import Camera from '../Camera/Camera';
 
 const drawerWidth = 240;
 
@@ -72,16 +74,10 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   justifyContent: 'flex-end',
 }));
 
-export default function Navbar({ onLogout }) {
+export default function Navbar() {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [menu, setMenu] = useState([
-    { key: "track-order", value: "Track Order", component_name: "TrackOrders" },
-    { key: "new-order", value: "New Order", component_name: "NewOrder" },
-    { key: "inventory", value: "Inventory", component_name: "Inventory" },
-    { key: "history-log", value: "History/Log", component_name: "HistoryLog" }
-  ]);
-  const [selected, setSelected] = useState("TrackOrders");
+  const [selectedMenu, setSelectedMenu] = useState('New Order');
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -91,11 +87,7 @@ export default function Navbar({ onLogout }) {
     setOpen(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('username');
-    localStorage.removeItem('password');
-    onLogout();
-  };
+  const menu = ['New Order', 'Track Orders', 'Inventory', 'Add Part', 'History Log', 'Camera'];
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -112,11 +104,8 @@ export default function Navbar({ onLogout }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Inventory Management
+            Inventory Management System
           </Typography>
-          <Button color="inherit" onClick={handleLogout} sx={{ ml: 'auto' }}>
-            Logout
-          </Button>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -139,24 +128,26 @@ export default function Navbar({ onLogout }) {
         </DrawerHeader>
         <Divider />
         <List>
-          {menu.map((item, index) => (
-            <ListItem key={item.key} disablePadding onClick={() => setSelected(item.component_name)}>
-              <ListItemButton>
+          {menu.map((text, index) => (
+            <ListItem key={text} disablePadding>
+              <ListItemButton onClick={() => setSelectedMenu(text)}>
                 <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                 </ListItemIcon>
-                <Divider />
-                <ListItemText primary={item.value} />
+                <ListItemText primary={text} />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
       </Drawer>
       <Main open={open}>
-        {selected === "TrackOrders" && <TrackOrders />}
-        {selected === "NewOrder" && <NewOrder />}
-        {selected === "Inventory" && <InventoryTable />}
-        {selected === "HistoryLog" && <HistoryLog />}
+        <DrawerHeader />
+        {selectedMenu === 'New Order' && <NewOrder />}
+        {selectedMenu === 'Track Orders' && <TrackOrders />}
+        {selectedMenu === 'Inventory' && <InventoryTable />}
+        {selectedMenu === 'History Log' && <HistoryLog />}
+        {selectedMenu === 'Add Part' && <AddPartForm />}
+        {selectedMenu === 'Camera' && <Camera />}
       </Main>
     </Box>
   );
