@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymongo
 import json
-import config 
+from werkzeug.utils import secure_filename
+import config
 
 app = Flask(__name__)
 CORS(app)
@@ -24,9 +25,37 @@ def getInventory():
 
 @app.route("/addInventory", methods=['POST'])
 def addInventory():
-    data = request.json
     try:
-        collection.insert_one(data)
+        parts = []
+        index = 0
+
+        while f'parts[{index}][partName]' in request.form:
+            part = {
+                'partName': request.form.get(f'parts[{index}][partName]'),
+                'moi': request.form.get(f'parts[{index}][moi]'),
+                'perPartPrice': request.form.get(f'parts[{index}][perPartPrice]'),
+                'quantity': request.form.get(f'parts[{index}][quantity]'),
+                'invoiceNumber': request.form.get(f'parts[{index}][invoiceNumber]')
+            }
+            image_file = request.files.get(f'parts[{index}][imageFile]')
+            if image_file:
+                filename = secure_filename(image_file.filename)
+                image_file.save(f'./uploads/{filename}')
+                part['imageFile'] = filename
+
+            parts.append(part)
+            index += 1
+
+        inventory = {
+            'date': request.form.get('date'),
+            'invoiceFile': secure_filename(request.files['invoiceFile'].filename) if 'invoiceFile' in request.files else None,
+            'parts': parts
+        }
+
+        if 'invoiceFile' in request.files:
+            request.files['invoiceFile'].save(f"./uploads/{inventory['invoiceFile']}")
+
+        collection.insert_one(inventory)
         return jsonify({'message': 'Inventory added successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -39,11 +68,39 @@ def deleteInventory(id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route("/updateInventory/<int:id>", methods=['POST'])
+@app.route("/updateInventory/<int:id>", methods=['PUT'])
 def updateInventory(id):
-    data = request.json
     try:
-        collection.update_one({'id': id}, {'$set': data})
+        parts = []
+        index = 0
+
+        while f'parts[{index}][partName]' in request.form:
+            part = {
+                'partName': request.form.get(f'parts[{index}][partName]'),
+                'moi': request.form.get(f'parts[{index}][moi]'),
+                'perPartPrice': request.form.get(f'parts[{index}][perPartPrice]'),
+                'quantity': request.form.get(f'parts[{index}][quantity]'),
+                'invoiceNumber': request.form.get(f'parts[{index}][invoiceNumber]')
+            }
+            image_file = request.files.get(f'parts[{index}][imageFile]')
+            if image_file:
+                filename = secure_filename(image_file.filename)
+                image_file.save(f'./uploads/{filename}')
+                part['imageFile'] = filename
+
+            parts.append(part)
+            index += 1
+
+        inventory = {
+            'date': request.form.get('date'),
+            'invoiceFile': secure_filename(request.files['invoiceFile'].filename) if 'invoiceFile' in request.files else None,
+            'parts': parts
+        }
+
+        if 'invoiceFile' in request.files:
+            request.files['invoiceFile'].save(f"./uploads/{inventory['invoiceFile']}")
+
+        collection.update_one({'id': id}, {'$set': inventory})
         return jsonify({'message': 'Inventory updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

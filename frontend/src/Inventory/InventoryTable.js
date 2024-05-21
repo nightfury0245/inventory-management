@@ -1,12 +1,10 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
@@ -18,8 +16,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import QRCode from 'qrcode.react';
@@ -27,37 +23,10 @@ import axios from 'axios';
 import Toolbar from '@mui/material/Toolbar';
 import Grid from '@mui/material/Grid';
 
-const createData = (id, partName, date, moi, perPartPrice, invoiceFile, imageFile) => {
-  return { id, partName, date, moi, perPartPrice, invoiceFile, imageFile };
-};
 
-const descendingComparator = (a, b, orderBy) => {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-};
 
-const getComparator = (order, orderBy) => {
-  return order === 'desc'
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-};
 
-const stableSort = (array, comparator) => {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) {
-      return order;
-    }
-    return a[1] - b[1];
-  });
-  return stabilizedThis.map((el) => el[0]);
-};
+
 
 function EnhancedTableToolbar(props) {
   const { handleAddClick } = props;
@@ -197,6 +166,22 @@ export default function InventoryTable() {
     quantity: '',
     invoiceNumber: '',
   }]);
+  const handleAddClick = () => {
+    setOpen(true);
+    setEditMode(false);
+    setParts([{
+      id: '',
+      partName: '',
+      moi: '',
+      perPartPrice: '',
+      imageFile: null,
+      quantity: '',
+      invoiceNumber: '',
+    }]);
+    setDate('');
+    setInvoiceFile(null);
+  };
+  
   const [date, setDate] = useState('');
   const [invoiceFile, setInvoiceFile] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -227,11 +212,6 @@ export default function InventoryTable() {
     };
   }, []);
 
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
 
   const handleInvoiceFileUpload = (event) => {
     setInvoiceFile(event.target.files[0]);
@@ -281,188 +261,195 @@ export default function InventoryTable() {
     setInvoiceFile(null);
   };
 
+  const handlePartChange = (index, event) => {
+    const { name, value, type, checked } = event.target;
+    const updatedParts = [...parts];
+    updatedParts[index] = {
+      ...updatedParts[index],
+      [name]: type === 'checkbox' ? checked : value,
+    };
+    setParts(updatedParts);
+  };
+
+  const handleImageUpload = (index, event) => {
+    const file = event.target.files[0];
+    const updatedParts = [...parts];
+    updatedParts[index] = {
+      ...updatedParts[index],
+      imageFile: file,
+    };
+    setParts(updatedParts);
+  };
+
+  const handlePartAdd = () => {
+    setParts([...parts, {
+      id: '',
+      partName: '',
+      moi: '',
+      perPartPrice: '',
+      imageFile: null,
+      quantity: '',
+      invoiceNumber: '',
+    }]);
+  };
+
   const handleSave = async () => {
     try {
       const formData = new FormData();
-      formData.append('parts', JSON.stringify(parts));
       formData.append('date', date);
-      if (invoiceFile) {
-        formData.append('invoiceFile', invoiceFile);
-      }
-
+      formData.append('invoiceFile', invoiceFile);
+  
+      parts.forEach((part, index) => {
+        formData.append(`parts[${index}][id]`, part.id);
+        formData.append(`parts[${index}][partName]`, part.partName);
+        formData.append(`parts[${index}][moi]`, part.moi);
+        formData.append(`parts[${index}][perPartPrice]`, part.perPartPrice);
+        formData.append(`parts[${index}][quantity]`, part.quantity);
+        formData.append(`parts[${index}][invoiceNumber]`, part.invoiceNumber);
+        if (part.imageFile) {
+          formData.append(`parts[${index}][imageFile]`, part.imageFile);
+        }
+      });
+  
       if (editMode) {
         await axios.put(`http://127.0.0.1:5000/updateInventory/${parts[0].id}`, formData);
-        setRows((prevRows) =>
-          prevRows.map((row) => (row.id === parts[0].id ? { ...row, ...parts[0], date, invoiceFile } : row))
-        );
       } else {
-        const response = await axios.post('http://127.0.0.1:5000/addInventory', formData);
-        const newPart = response.data;
-        setRows((prevRows) => [...prevRows, newPart]);
+        await axios.post('http://127.0.0.1:5000/addInventory', formData);
       }
-
+  
+      const response = await axios.get('http://127.0.0.1:5000/getInventory');
+      if (response && response.data) {
+        setRows(response.data);
+      } else {
+        console.error('Empty response or invalid data received from API');
+      }
+  
       handleClose();
     } catch (error) {
       console.error('Error saving inventory:', error);
     }
   };
-
-  const handleAddClick = () => {
-    setShowPartForm(true); // Show part form when Add Part button is clicked
-  };
-
-  const handlePartChange = (index, event) => {
-    const { name, value, files } = event.target;
-    const updatedParts = [...parts];
-    if (name === 'imageFile') {
-      updatedParts[index][name] = files[0];
-    } else {
-      updatedParts[index][name] = value;
-    }
-    setParts(updatedParts);
-  };
-
-  const handleAddPart = () => {
-    setParts([
-      ...parts,
-      {
-        id: '',
-        partName: '',
-        moi: '',
-        perPartPrice: '',
-        imageFile: null,
-        quantity: '',
-        invoiceNumber: '',
-      },
-    ]);
-  };
-
-  const handleRemovePart = (index) => {
-    const updatedParts = [...parts];
-    updatedParts.splice(index, 1);
-    setParts(updatedParts);
-  };
+  
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Paper sx={{ mb: 2 }}>
-        <EnhancedTableToolbar handleAddClick={handleAddClick} />
-        <Grid container spacing={2} sx={{ p: 2 }}>
-          {stableSort(rows, getComparator(order, orderBy)).map((row) => (
-            <Grid item xs={12} md={6} lg={4} key={row.id}>
-              <InventoryCard row={row} handleClick={handleClick} handleEdit={handleEdit} handleDelete={handleDelete} />
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
+      <EnhancedTableToolbar handleAddClick={handleAddClick} />
+      <Box sx={{ padding: 2 }}>
+        {rows.map((row) => (
+          <InventoryCard
+            key={row.id}
+            row={row}
+            handleClick={handleClick}
+            handleEdit={handleEdit}
+            handleDelete={handleDelete}
+          />
+        ))}
+      </Box>
 
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>{editMode ? 'Edit Inventory Part' : 'Add Inventory Part'}</DialogTitle>
+        <DialogTitle>{editMode ? 'Edit Part' : 'Add Part'}</DialogTitle>
         <DialogContent>
-          {parts.map((part, index) => (
-            <Box key={index} sx={{ mb: 2 }}>
-              <TextField
-                autoFocus
-                margin="dense"
-                name="partName"
-                label="Part Name"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={part.partName}
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <TextField
-                margin="dense"
-                name="moi"
-                label="Unit of Measurement"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={part.moi}
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <TextField
-                margin="dense"
-                name="perPartPrice"
-                label="Per Part Price"
-                type="number"
-                fullWidth
-                variant="standard"
-                value={part.perPartPrice}
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <TextField
-                margin="dense"
-                name="quantity"
-                label="Quantity"
-                type="number"
-                fullWidth
-                variant="standard"
-                value={part.quantity}
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <TextField
-                margin="dense"
-                name="invoiceNumber"
-                label="Invoice Number"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={part.invoiceNumber}
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <input
-                accept="image/*"
-                style={{ display: 'none' }}
-                id={`image-file-${index}`}
-                type="file"
-                name="imageFile"
-                onChange={(e) => handlePartChange(index, e)}
-              />
-              <label htmlFor={`image-file-${index}`}>
-                <Button variant="contained" component="span">
-                  Upload Image
-                  <AttachFileIcon />
+          <Box>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  component="label"
+                  startIcon={<AttachFileIcon />}
+                >
+                  {invoiceFile ? invoiceFile.name : 'Upload Invoice'}
+                  <input
+                    type="file"
+                    hidden
+                    onChange={handleInvoiceFileUpload}
+                  />
                 </Button>
-                {part.imageFile && <span>{part.imageFile.name}</span>}
-              </label>
-              <Button onClick={() => handleRemovePart(index)} variant="outlined" color="secondary" sx={{ mt: 2 }}>
-                Remove Part
-              </Button>
-            </Box>
-          ))}
-          <Button onClick={handleAddPart} variant="outlined" sx={{ mt: 2 }}>
-            Add Another Part
-          </Button>
-          <TextField
-            margin="dense"
-            name="date"
-            label="Date"
-            type="date"
-            fullWidth
-            variant="standard"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <input
-            accept="application/pdf"
-            style={{ display: 'none' }}
-            id="invoice-file"
-            type="file"
-            name="invoiceFile"
-            onChange={handleInvoiceFileUpload}
-          />
-          <label htmlFor="invoice-file">
-            <Button variant="contained" component="span">
-              Upload Invoice
-              <AttachFileIcon />
+              </Grid>
+              {parts.map((part, index) => (
+                <React.Fragment key={index}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Part Name"
+                      name="partName"
+                      value={part.partName}
+                      onChange={(event) => handlePartChange(index, event)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Unit of Measurement"
+                      name="moi"
+                      value={part.moi}
+                      onChange={(event) => handlePartChange(index, event)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Per Part Price"
+                      name="perPartPrice"
+                      value={part.perPartPrice}
+                      onChange={(event) => handlePartChange(index, event)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Quantity"
+                      name="quantity"
+                      value={part.quantity}
+                      onChange={(event) => handlePartChange(index, event)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Invoice Number"
+                      name="invoiceNumber"
+                      value={part.invoiceNumber}
+                      onChange={(event) => handlePartChange(index, event)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      component="label"
+                      startIcon={<ImageIcon />}
+                    >
+                      {part.imageFile ? part.imageFile.name : 'Upload Image'}
+                      <input
+                        type="file"
+                        hidden
+                        onChange={(event) => handleImageUpload(index, event)}
+                      />
+                    </Button>
+                  </Grid>
+                </React.Fragment>
+              ))}
+            </Grid>
+          </Box>
+          <Box sx={{ marginTop: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handlePartAdd}
+            >
+              Add Another Part
             </Button>
-            {invoiceFile && <span>{invoiceFile.name}</span>}
-          </label>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">
@@ -474,25 +461,47 @@ export default function InventoryTable() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={detailOpen} onClose={handleDetailClose} maxWidth="md" fullWidth>
+      <Dialog open={detailOpen} onClose={handleDetailClose}>
         <DialogTitle>Part Details</DialogTitle>
         <DialogContent>
-          <Typography variant="h6">Part Name: {detailRow.partName}</Typography>
-          <Typography variant="body1">Unit of Measurement: {detailRow.moi}</Typography>
-          <Typography variant="body1">Per Part Price: ${detailRow.perPartPrice}</Typography>
-          <Typography variant="body1">Available Quantity: {detailRow.quantity}</Typography>
-          <Box sx={{ mt: 2 }}>
-            <QRCode value={JSON.stringify(detailRow)} id={`qr-${detailRow.id}`} />
-            <Button variant="contained" onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}>
+          <Typography variant="h6" component="div">
+            {detailRow.partName}
+          </Typography>
+          <Typography color="text.secondary">
+            Unit of Measurement: {detailRow.moi}
+          </Typography>
+          <Typography variant="body2">
+            Per Part Price: ${detailRow.perPartPrice}
+          </Typography>
+          <Typography variant="body2">
+            Available Quantity: {detailRow.quantity}
+          </Typography>
+          <Typography variant="body2">
+            Invoice Number: {detailRow.invoiceNumber}
+          </Typography>
+          <Typography variant="body2">
+            Date: {detailRow.date}
+          </Typography>
+          {detailRow.imageFile && (
+            <img
+              src={URL.createObjectURL(detailRow.imageFile)}
+              alt="Part"
+              style={{ maxWidth: '100%', marginTop: '10px' }}
+            />
+          )}
+          <Box sx={{ marginTop: '20px' }}>
+            <div id={`qr-${detailRow.id}`}>
+              <QRCode value={JSON.stringify(detailRow)} />
+            </div>
+            <Button
+              variant="contained"
+              onClick={() => downloadQRCode(detailRow.partName, detailRow.id)}
+              sx={{ marginTop: '10px' }}
+            >
               Download QR Code
             </Button>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDetailClose} color="primary">
-            Close
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );
