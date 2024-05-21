@@ -2,4 +2,6 @@
 
 
 database_name = "Inventory_Management"
-collection_name = "InventoryDataPOC"
+inventory_collection_name = "InventoryData"
+inventory_poc_collection_name = "InventoryDataPOC"
+order_collection_name = "OrderData"

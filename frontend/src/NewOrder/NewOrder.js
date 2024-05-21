@@ -125,8 +125,10 @@ const NewOrder = () => {
     return partObj ? partObj["price per unit"] : -1;
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = (ordername, orderitems) => {
     console.log("Order placed");
+    console.log(ordername,orderitems);
+    // todo write an API request to send the order data to the server
   };
 
   const handleImageUpload = (event) => {
@@ -176,7 +178,7 @@ const NewOrder = () => {
             options={partsData.map((part) => part["Part Name"] + " : " + part["available quantity"] + " available")}
             value={selectedPart}
             onChange={(event, newValue) => {
-              setSelectedPart(newValue);
+              setSelectedPart(newValue.split(':')[0].trim());
               setPricePerUnit(getPricePerUnit(newValue));
             }}
             renderInput={(params) => (
@@ -268,8 +270,8 @@ const NewOrder = () => {
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleCloseConfirmation}>Go back and edit</Button>
-              <Button onClick={handlePlaceOrder}>Place order</Button> {/* Call handlePlaceOrder function */}
+              <Button onClick={()=>handleCloseConfirmation}>Go back and edit</Button>
+              <Button onClick={()=>handlePlaceOrder(orderName,orderItems)}>Place order</Button> {/* Call handlePlaceOrder function */}
             </DialogActions>
           </Dialog>
         </div>
