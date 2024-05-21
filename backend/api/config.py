@@ -4,4 +4,5 @@
 database_name = "Inventory_Management"
 inventory_collection_name = "InventoryData"
 inventory_poc_collection_name = "InventoryDataPOC"
-order_collection_name = "OrderData"
+neworder_collection_name = "OrderData"
+neworder_poc_collection_name = "OrderDataPOC"

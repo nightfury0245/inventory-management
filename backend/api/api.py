@@ -11,7 +11,8 @@ CORS(app)
 # MongoDB configuration
 client = pymongo.MongoClient(f"mongodb+srv://mongo-user:user@cluster0.r05dlnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = client[config.database_name]
-collection = db[config.collection_name]
+inventory_collection = db[config.inventory_poc_collection_name]
+neworder_collection = db[config.neworder_poc_collection_name]
 
 @app.route("/", methods=['GET'])
 def helloworld():
@@ -22,27 +23,40 @@ def getInventory():
     # write a python script to connect to mongoDB and retrieve the inventory data
     # Frontend expects the following format:
     # id, Part Name, MFD, Unit of Measurement, available quantity, price per unit, part image, invoice image
-    #
-    client = pymongo.MongoClient(f"mongodb+srv://mongo-user:user@cluster0.r05dlnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    db = client[config.database_name]
-    collection = db[config.inventory_poc_collection_name]
     return_list = []
-    # Retrieve all documents from the collection
-    documents = collection.find()
+    # Retrieve all documents from the inventory_collection
+    documents = inventory_collection.find()
     documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
 
-    for document in documents_array:
-        json_doc = json.loads(document)
-        temp = {}
+    # for document in documents_array:
+    #     json_doc = json.loads(document)
+    #     temp = {}
         # compute total quantity available
 
     return documents_array
 
-@app.route("/placeOrder")
+@app.route("/placeOrder", methods=["GET", "POST"])
 def placeOrder():
-    # basically for POC we get order name and a json object like : [ {partname, quantity, partperpiece }]
+    # Parse the request data
+    body = request.get_json()
+    ordername = body['ordername']
+    orderItems = body['orderitems']
 
-    return "error palcing order"
+    # Create the order document to insert
+    order_document = {
+        'ordername': ordername,
+        'orderitems': orderItems
+    }
+
+    # MongoDB query to insert order into the database
+    try:
+        status = neworder_collection.insert_one(order_document)
+        if status.acknowledged:
+            return jsonify({"message": "Order placed successfully"}), 201
+        else:
+            return jsonify({"message": "Error placing order"}), 500
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
 @app.route("/addInventory", methods=['POST'])
 def addInventory():

@@ -125,10 +125,16 @@ const NewOrder = () => {
     return partObj ? partObj["price per unit"] : -1;
   };
 
-  const handlePlaceOrder = (ordername, orderitems) => {
+  const handlePlaceOrder = async(ordername, orderitems) => {
     console.log("Order placed");
     console.log(ordername,orderitems);
     // todo write an API request to send the order data to the server
+    const placeorderResponse = await axios.post("http://localhost:5000/placeorder", {
+      ordername,
+      orderitems,
+    }).then(console.log("called API to place order"))
+
+    console.log(placeorderResponse.status)
   };
 
   const handleImageUpload = (event) => {
@@ -271,7 +277,7 @@ const NewOrder = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={()=>handleCloseConfirmation}>Go back and edit</Button>
-              <Button onClick={()=>handlePlaceOrder(orderName,orderItems)}>Place order</Button> {/* Call handlePlaceOrder function */}
+              <Button onClick={async()=>await handlePlaceOrder(orderName,orderItems)}>Place order</Button> {/* Call handlePlaceOrder function */}
             </DialogActions>
           </Dialog>
         </div>
