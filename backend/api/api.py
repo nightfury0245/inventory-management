@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import config
 import os
 import traceback
+import subprocess
 
 app = Flask(__name__)
 CORS(app)
@@ -90,6 +91,29 @@ def deleteInventory(id):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/process_invoice', methods=['POST'])
+def process_invoice():
+    try:
+        file = request.files['invoice']
+        if file:
+            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+            result = subprocess.run(
+                ['python', 'extract_features.py', file_path],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                return jsonify({'error': 'Failed to process invoice'}), 500
+            return result.stdout
+        return jsonify({"error": "No file provided"}), 400
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

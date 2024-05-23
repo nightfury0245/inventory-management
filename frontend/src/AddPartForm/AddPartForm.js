@@ -47,6 +47,34 @@ export default function AddPartForm() {
     }]);
   };
 
+  const handleInvoiceUpload = async (event) => {
+    const file = event.target.files[0];
+    setInvoiceFile(file);
+    if (file) {
+      const formData = new FormData();
+      formData.append('invoice', file);
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/process_invoice', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const data = JSON.parse(response.data);
+        const extractedParts = data.valid_sentences.map(sentence => ({
+          partName: sentence.entities.partName || '',
+          moi: sentence.entities.moi || '',
+          perPartPrice: sentence.entities.perPartPrice || '',
+          quantity: sentence.entities.quantity || '',
+          invoiceNumber: sentence.entities.invoiceNumber || '',
+          imageFile: null,
+        }));
+        setParts(extractedParts);
+      } catch (error) {
+        console.error('Error processing invoice:', error);
+      }
+    }
+  };
+
   const handleSave = async () => {
     try {
       await Promise.all(parts.map(async (part) => {
@@ -63,159 +91,109 @@ export default function AddPartForm() {
         if (part.imageFile) {
           formData.append('imageFile', part.imageFile);
         }
-
         await axios.post('http://127.0.0.1:5000/addInventory', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
       }));
-
-      // Reset form fields after successful save
-      setDate(new Date().toISOString().split('T')[0]);
-      setInvoiceFile(null);
-      setParts([{
-        partName: '',
-        moi: '',
-        perPartPrice: '',
-        imageFile: null,
-        quantity: '',
-        invoiceNumber: '',
-      }]);
-      
+      alert('Parts saved successfully!');
     } catch (error) {
-      console.error('Error saving inventory:', error);
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-      }
+      console.error('Error saving parts:', error);
+      alert('Failed to save parts');
     }
   };
 
   return (
-    <Box sx={{ width: '100%', padding: 2 }}>
+    <Dialog open={true} onClose={() => {}}>
       <DialogTitle>Add Part</DialogTitle>
       <DialogContent>
-        <Box>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Date"
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-                fullWidth
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                component="label"
-                startIcon={<AttachFileIcon />}
-              >
-                {invoiceFile ? invoiceFile.name : 'Upload Invoice'}
-                <input
-                  type="file"
-                  hidden
-                  onChange={(event) => setInvoiceFile(event.target.files[0])}
+        <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <input type="file" accept=".pdf" onChange={handleInvoiceUpload} />
+          {parts.map((part, index) => (
+            <Grid container spacing={2} key={index}>
+              <Grid item xs={6}>
+                <TextField
+                  label="Part Name"
+                  name="partName"
+                  value={part.partName}
+                  onChange={(event) => handlePartChange(index, event)}
+                  fullWidth
                 />
-              </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="MOI"
+                  name="moi"
+                  value={part.moi}
+                  onChange={(event) => handlePartChange(index, event)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Per Part Price"
+                  name="perPartPrice"
+                  value={part.perPartPrice}
+                  onChange={(event) => handlePartChange(index, event)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Quantity"
+                  name="quantity"
+                  value={part.quantity}
+                  onChange={(event) => handlePartChange(index, event)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Invoice Number"
+                  name="invoiceNumber"
+                  value={part.invoiceNumber}
+                  onChange={(event) => handlePartChange(index, event)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  variant="contained"
+                  component="label"
+                  startIcon={<ImageIcon />}
+                >
+                  Upload Image
+                  <input
+                    type="file"
+                    hidden
+                    onChange={(event) => handleImageUpload(index, event)}
+                  />
+                </Button>
+              </Grid>
             </Grid>
-            {parts.map((part, index) => (
-              <React.Fragment key={index}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Part Name"
-                    name="partName"
-                    value={part.partName}
-                    onChange={(event) => handlePartChange(index, event)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Unit of Measurement"
-                    name="moi"
-                    value={part.moi}
-                    onChange={(event) => handlePartChange(index, event)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Per Part Price"
-                    name="perPartPrice"
-                    value={part.perPartPrice}
-                    onChange={(event) => handlePartChange(index, event)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Quantity"
-                    name="quantity"
-                    value={part.quantity}
-                    onChange={(event) => handlePartChange(index, event)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Invoice Number"
-                    name="invoiceNumber"
-                    value={part.invoiceNumber}
-                    onChange={(event) => handlePartChange(index, event)}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    component="label"
-                    startIcon={<ImageIcon />}
-                  >
-                    {part.imageFile ? part.imageFile.name : 'Upload Image'}
-                    <input
-                      type="file"
-                      hidden
-                      onChange={(event) => handleImageUpload(index, event)}
-                    />
-                  </Button>
-                </Grid>
-              </React.Fragment>
-            ))}
-          </Grid>
-        </Box>
-        <Box sx={{ marginTop: 2 }}>
+          ))}
           <Button
             variant="contained"
             onClick={handlePartAdd}
+            startIcon={<AttachFileIcon />}
           >
             Add Another Part
           </Button>
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => {
-          setDate(new Date().toISOString().split('T')[0]);
-          setInvoiceFile(null);
-          setParts([{
-            partName: '',
-            moi: '',
-            perPartPrice: '',
-            imageFile: null,
-            quantity: '',
-            invoiceNumber: '',
-          }]);
-        }} color="primary">
-          Cancel
-        </Button>
-        <Button onClick={handleSave} color="primary">
-          Save
-        </Button>
+        <Button onClick={handleSave} color="primary">Save</Button>
       </DialogActions>
-    </Box>
+    </Dialog>
   );
 }
