@@ -13,7 +13,7 @@ export default function AddPartForm() {
     quantity: '',
     invoiceNumber: '',
   }]);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceFile, setInvoiceFile] = useState(null);
 
   const handlePartChange = (index, event) => {
@@ -72,7 +72,7 @@ export default function AddPartForm() {
       }));
 
       // Reset form fields after successful save
-      setDate('');
+      setDate(new Date().toISOString().split('T')[0]);
       setInvoiceFile(null);
       setParts([{
         partName: '',
@@ -199,7 +199,7 @@ export default function AddPartForm() {
       </DialogContent>
       <DialogActions>
         <Button onClick={() => {
-          setDate('');
+          setDate(new Date().toISOString().split('T')[0]);
           setInvoiceFile(null);
           setParts([{
             partName: '',
