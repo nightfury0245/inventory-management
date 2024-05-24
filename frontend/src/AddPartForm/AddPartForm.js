@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import { Box, Button, Grid, TextField } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import axios from 'axios';
@@ -105,95 +105,91 @@ export default function AddPartForm() {
   };
 
   return (
-    <Dialog open={true} onClose={() => {}}>
-      <DialogTitle>Add Part</DialogTitle>
-      <DialogContent>
-        <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <input type="file" accept=".pdf" onChange={handleInvoiceUpload} />
-          {parts.map((part, index) => (
-            <Grid container spacing={2} key={index}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Part Name"
-                  name="partName"
-                  value={part.partName}
-                  onChange={(event) => handlePartChange(index, event)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="MOI"
-                  name="moi"
-                  value={part.moi}
-                  onChange={(event) => handlePartChange(index, event)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Per Part Price"
-                  name="perPartPrice"
-                  value={part.perPartPrice}
-                  onChange={(event) => handlePartChange(index, event)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Quantity"
-                  name="quantity"
-                  value={part.quantity}
-                  onChange={(event) => handlePartChange(index, event)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Invoice Number"
-                  name="invoiceNumber"
-                  value={part.invoiceNumber}
-                  onChange={(event) => handlePartChange(index, event)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="contained"
-                  component="label"
-                  startIcon={<ImageIcon />}
-                >
-                  Upload Image
-                  <input
-                    type="file"
-                    hidden
-                    onChange={(event) => handleImageUpload(index, event)}
-                  />
-                </Button>
-              </Grid>
-            </Grid>
-          ))}
-          <Button
-            variant="contained"
-            onClick={handlePartAdd}
-            startIcon={<AttachFileIcon />}
-          >
-            Add Another Part
-          </Button>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleSave} color="primary">Save</Button>
-      </DialogActions>
-    </Dialog>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+      <TextField
+        label="Date"
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        InputLabelProps={{
+          shrink: true,
+        }}
+        fullWidth
+      />
+      <input type="file" accept=".pdf" onChange={handleInvoiceUpload} />
+      {parts.map((part, index) => (
+        <Grid container spacing={2} key={index}>
+          <Grid item xs={6}>
+            <TextField
+              label="Part Name"
+              name="partName"
+              value={part.partName}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="MOI"
+              name="moi"
+              value={part.moi}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Per Part Price"
+              name="perPartPrice"
+              value={part.perPartPrice}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Quantity"
+              name="quantity"
+              value={part.quantity}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Invoice Number"
+              name="invoiceNumber"
+              value={part.invoiceNumber}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<ImageIcon />}
+            >
+              Upload Image
+              <input
+                type="file"
+                hidden
+                onChange={(event) => handleImageUpload(index, event)}
+              />
+            </Button>
+          </Grid>
+        </Grid>
+      ))}
+      <Button
+        variant="contained"
+        onClick={handlePartAdd}
+        startIcon={<AttachFileIcon />}
+      >
+        Add Another Part
+      </Button>
+      <Button onClick={handleSave} color="primary" variant="contained">
+        Save
+      </Button>
+    </Box>
   );
 }
