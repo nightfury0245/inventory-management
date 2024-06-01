@@ -30,6 +30,21 @@ def getInventory():
     documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
     return documents_array
 
+@app.route("/getPartDetails/<partId>", methods=['GET'])
+def getPartDetails(partId):
+    try:
+        part = collection.find_one({'_id': pymongo.ObjectId(partId)})
+        if part:
+            return jsonify(json.loads(json.dumps(part, default=str))), 200
+        else:
+            return jsonify({'message': 'Part not found'}), 404
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
 @app.route("/addInventory", methods=['POST'])
 def addInventory():
     try:

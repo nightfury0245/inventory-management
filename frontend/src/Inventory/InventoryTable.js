@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-  TextField, IconButton 
+  TextField, IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import QRCode from 'qrcode.react';
+import './InventoryTable.css'; // Import the CSS file
 
 const InventoryTable = () => {
   const [parts, setParts] = useState([]);
@@ -86,8 +87,8 @@ const InventoryTable = () => {
   };
 
   return (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer component={Paper} className="table-container">
+      <Table stickyHeader>
         <TableHead>
           <TableRow>
             <TableCell>Part Name</TableCell>

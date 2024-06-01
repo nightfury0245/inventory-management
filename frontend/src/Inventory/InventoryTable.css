@@ -1,0 +1,12 @@
+.table-container {
+    max-height: 70vh; /* Adjust the height as needed */
+    overflow-y: auto;
+  }
+  
+  .MuiTableCell-head {
+    position: sticky;
+    top: 0;
+    background-color: white; /* Ensure the header has a background color */
+    z-index: 1; /* Ensure the header stays above the table body */
+  }
+  

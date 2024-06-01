@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography, Paper, Button } from '@mui/material';
+import axios from 'axios';
 
 export default function QrScanner() {
   const [data, setData] = useState('No result');
+  const [partDetails, setPartDetails] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -42,7 +44,7 @@ export default function QrScanner() {
   const scanQRCode = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     const interval = setInterval(() => {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -60,6 +62,7 @@ export default function QrScanner() {
         if (result) {
           setData(result);
           clearInterval(interval);
+          fetchPartDetails(result);
         }
 
         mat.delete();
@@ -67,6 +70,16 @@ export default function QrScanner() {
         straight_qrcode.delete();
       }
     }, 1000);
+  };
+
+  const fetchPartDetails = (partId) => {
+    axios.get(`http://localhost:5000/getPartDetails/${partId}`)
+      .then(response => {
+        setPartDetails(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching part details', error);
+      });
   };
 
   return (
@@ -90,6 +103,17 @@ export default function QrScanner() {
         <Typography variant="body1" style={{ marginTop: '20px' }}>
           {data}
         </Typography>
+        {partDetails && (
+          <Box style={{ marginTop: '20px', textAlign: 'left' }}>
+            <Typography variant="h5">Part Details:</Typography>
+            <Typography variant="body1">Part Name: {partDetails.partName}</Typography>
+            <Typography variant="body1">Date: {partDetails.date}</Typography>
+            <Typography variant="body1">MOI: {partDetails.moi}</Typography>
+            <Typography variant="body1">Price: {partDetails.perPartPrice}</Typography>
+            <Typography variant="body1">Quantity: {partDetails.quantity}</Typography>
+            <Typography variant="body1">Invoice Number: {partDetails.invoiceNumber}</Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
