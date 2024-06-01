@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Button, Grid, TextField } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
 export default function AddPartForm() {
@@ -45,6 +46,11 @@ export default function AddPartForm() {
       quantity: '',
       invoiceNumber: '',
     }]);
+  };
+
+  const handlePartDelete = (index) => {
+    const updatedParts = parts.filter((_, i) => i !== index);
+    setParts(updatedParts);
   };
 
   const handleInvoiceUpload = async (event) => {
@@ -176,6 +182,16 @@ export default function AddPartForm() {
                 hidden
                 onChange={(event) => handleImageUpload(index, event)}
               />
+            </Button>
+          </Grid>
+          <Grid item xs={6}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => handlePartDelete(index)}
+              startIcon={<DeleteIcon />}
+            >
+              Delete
             </Button>
           </Grid>
         </Grid>
