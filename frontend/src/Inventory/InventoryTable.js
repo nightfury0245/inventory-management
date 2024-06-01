@@ -58,13 +58,13 @@ const InventoryTable = () => {
     }
   };
 
-  const handleDownloadQRCode = (id) => {
+  const handleDownloadQRCode = (id, name) => {
     const canvas = document.getElementById(`qrcode-${id}`);
     if (canvas) {
       const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
       const downloadLink = document.createElement("a");
       downloadLink.href = pngUrl;
-      downloadLink.download = `${id}.png`;
+      downloadLink.download = `${name}-${id}.png`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
@@ -132,11 +132,27 @@ const InventoryTable = () => {
               <strong>Quantity:</strong> {currentPart.quantity}<br />
               <strong>Date:</strong> {currentPart.date}
             </DialogContentText>
-            {currentPart._id && <QRCode id={`qrcode-${currentPart._id.$oid}`} value={currentPart._id.$oid} />}
+            {currentPart._id && (
+              <>
+                <QRCode
+                  id={`qrcode-${currentPart._id.$oid}`}
+                  value={JSON.stringify({ id: currentPart._id.$oid, partName: currentPart.partName })}
+                />
+                <pre>{JSON.stringify({ id: currentPart._id.$oid, partName: currentPart.partName }, null, 2)}</pre>
+              </>
+            )}
           </DialogContent>
           <DialogActions>
-            {currentPart._id && <Button onClick={() => handleDownloadQRCode(currentPart._id.$oid)}>Download QR Code</Button>}
-            {currentPart.invoiceFile && <Button onClick={() => handleDownloadInvoice(currentPart.invoiceFile)}>Download Invoice</Button>}
+            {currentPart._id && (
+              <Button onClick={() => handleDownloadQRCode(currentPart._id.$oid, currentPart.partName)}>
+                Download QR Code
+              </Button>
+            )}
+            {currentPart.invoiceFile && (
+              <Button onClick={() => handleDownloadInvoice(currentPart.invoiceFile)}>
+                Download Invoice
+              </Button>
+            )}
             <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>

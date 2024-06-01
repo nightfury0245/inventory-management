@@ -4,9 +4,11 @@ import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function AddPartForm() {
   const [parts, setParts] = useState([{
+    id: uuidv4(),
     partName: '',
     moi: '',
     perPartPrice: '',
@@ -39,6 +41,7 @@ export default function AddPartForm() {
 
   const handlePartAdd = () => {
     setParts([...parts, {
+      id: uuidv4(),
       partName: '',
       moi: '',
       perPartPrice: '',
@@ -67,6 +70,7 @@ export default function AddPartForm() {
         });
         const data = JSON.parse(response.data);
         const extractedParts = data.valid_sentences.map(sentence => ({
+          id: uuidv4(),
           partName: sentence.entities.partName || '',
           moi: sentence.entities.moi || '',
           perPartPrice: sentence.entities.perPartPrice || '',
@@ -86,6 +90,7 @@ export default function AddPartForm() {
       await Promise.all(parts.map(async (part) => {
         const formData = new FormData();
         formData.append('date', date);
+        formData.append('id', part.id);
         if (invoiceFile) {
           formData.append('invoiceFile', invoiceFile);
         }
