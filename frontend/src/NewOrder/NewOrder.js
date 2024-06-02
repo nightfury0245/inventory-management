@@ -136,8 +136,10 @@ const NewOrder = () => {
         });
         console.log(response.status);
         // reset all values once an order is placed successfully.
-        // using page reload 
-        location.reload();
+        setOrderName("");
+        setOrderItems([]);
+        setRequiredQuantity(1);
+        setSelectedPart("");
     } catch (error) {
         if (error.response) {
             // The request was made and the server responded with a status code
