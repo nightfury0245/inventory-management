@@ -185,7 +185,7 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
                       <CardMedia
                         component="img"
                         sx={{ width: 56, height: 56, borderRadius: 1 }}
-                        image={Config.api_url + "/uploads/" + item.image || "default-image-path"}  // Use default image if not provided
+                        image={Config.api_url + "/uploads/" + item.partImage || "default-image-path"}  // Use default image if not provided
                         alt={item.partName}
                       />
                     </ListItemAvatar>

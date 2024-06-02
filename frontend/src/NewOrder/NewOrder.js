@@ -91,7 +91,8 @@ const NewOrder = () => {
           partName: selectedPart,
           quantity: requiredQuantity,
           perPartPrice: partData.perPartPrice,
-          partId: partData._id
+          partId: partData._id,
+          partImage: partData.imageFile,
         };
         setOrderItems([...orderItems, newOrderItem]);
       }
