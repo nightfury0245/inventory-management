@@ -66,7 +66,7 @@ export default function AddPartForm() {
             'Content-Type': 'multipart/form-data',
           },
         });
-        const data = JSON.parse(response.data);
+        const data = response.data;
         const extractedParts = data.valid_sentences.map(sentence => ({
           partName: sentence.entities.partName || '',
           moi: sentence.entities.moi || '',
