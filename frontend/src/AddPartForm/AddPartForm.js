@@ -10,7 +10,7 @@ export default function AddPartForm() {
   const [parts, setParts] = useState([{
     invoiceNumber: '',
     partName: '',
-    moi: '',
+    uom: '',
     perPartPrice: '',
     quantity: '',
     imageFile: null,
@@ -42,7 +42,7 @@ export default function AddPartForm() {
     setParts([...parts, {
       invoiceNumber: '',
       partName: '',
-      moi: '',
+      uom: '',
       perPartPrice: '',
       quantity: '',
       imageFile: null,
@@ -72,7 +72,7 @@ export default function AddPartForm() {
         const extractedParts = data.map(sentence => ({
           invoiceNumber: sentence.entities['INVOICE NUMBER'] || '',
           partName: sentence.entities['PART NAME'] || '',
-          moi: sentence.entities['PIECE TYPE'] || '',
+          uom: sentence.entities['PIECE TYPE'] || '',
           perPartPrice: sentence.entities['RATE'] || '',
           quantity: sentence.entities['QUANTITY'] || '',
           imageFile: null,
@@ -93,7 +93,7 @@ export default function AddPartForm() {
           formData.append('invoiceFile', invoiceFile);
         }
         formData.append('partName', part.partName);
-        formData.append('moi', part.moi);
+        formData.append('uom', part.uom);
         formData.append('perPartPrice', part.perPartPrice);
         formData.append('quantity', part.quantity);
         formData.append('invoiceNumber', part.invoiceNumber);
@@ -148,9 +148,9 @@ export default function AddPartForm() {
           </Grid>
           <Grid item xs={6}>
             <TextField
-              label="Piece Type (MOI)"
-              name="moi"
-              value={part.moi}
+              label="Units of Measurement (UOM)"
+              name="uom"
+              value={part.uom}
               onChange={(event) => handlePartChange(index, event)}
               fullWidth
             />

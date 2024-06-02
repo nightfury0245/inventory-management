@@ -27,6 +27,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def clean_table(table):
     table = table.dropna(how='all')
+    
     table = table.applymap(lambda x: x.replace('\t', '').strip() if isinstance(x, str) else x)
     
     return table
@@ -221,6 +222,44 @@ def deleteOrder(id):
         print(f"Error: {error_message}")
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
+
+@app.route('/updateOrderItem/<order_id>/<item_id>', methods=['PUT'])
+def updateOrderItem(order_id, item_id):
+    try:
+        item_update = request.get_json()
+        # Ensure no '_id' field in the item update object
+        if '_id' in item_update:
+            del item_update['_id']
+        
+        # Update the specific item in the order
+        neworder_collection.update_one(
+            {'_id': ObjectId(order_id), 'orderitems._id': ObjectId(item_id)},
+            {'$set': {'orderitems.$': item_update}}
+        )
+        return jsonify({'message': 'Order item updated successfully'}), 200
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
+@app.route('/deleteOrderItem/<order_id>/<item_id>', methods=['DELETE'])
+def deleteOrderItem(order_id, item_id):
+    try:
+        # Remove the specific item from the order
+        neworder_collection.update_one(
+            {'_id': ObjectId(order_id)},
+            {'$pull': {'orderitems': {'_id': ObjectId(item_id)}}}
+        )
+        return jsonify({'message': 'Order item deleted successfully'}), 200
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

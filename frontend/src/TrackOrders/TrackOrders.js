@@ -13,8 +13,13 @@ import {
   ListItemAvatar,
   TextField,
   Typography,
+  IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
 } from "@mui/material";
-import { PhotoCamera } from "@mui/icons-material";
+import { PhotoCamera, Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
 import Config from '../../Config';
 
 const OrdersTab = ({ orders, onSelectOrder }) => {
@@ -64,15 +69,6 @@ const PartEditForm = ({ part, partKey, onSave }) => {
     setEditedPart({ ...editedPart, [name]: value });
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setEditedPart({ ...editedPart, image: reader.result });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(partKey, editedPart);
@@ -89,39 +85,12 @@ const PartEditForm = ({ part, partKey, onSave }) => {
         fullWidth
         margin="normal"
       />
-      <TextField
-        label="Cost"
-        type="text"
-        name="perPartPrice"
-        value={editedPart.perPartPrice}
-        onChange={handleInputChange}
-        fullWidth
-        margin="normal"
-      />
-      <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
-        <Button
-          variant="contained"
-          component="label"
-          startIcon={<PhotoCamera />}
-        >
-          Upload Image
-          <input type="file" hidden onChange={handleImageUpload} />
-        </Button>
-        {editedPart.image && (
-          <CardMedia
-            component="img"
-            sx={{ width: 56, height: 56, borderRadius: 1, ml: 2 }}
-            image={editedPart.image}
-            alt="Part"
-          />
-        )}
-      </Box>
       <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>Save</Button>
     </Box>
   );
 };
 
-const OrderPreview = ({ selectedOrder, onEditPart }) => {
+const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
   const [editingPart, setEditingPart] = useState(null);
 
   const handleEditClick = (partKey) => {
@@ -137,6 +106,18 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
       await axios.put(`${Config.api_url}/updateInventory/${editedPart._id}`, editedPart);
     } catch (error) {
       console.error("Error updating inventory item:", error);
+    }
+  };
+
+  const handleDeletePart = async (partKey) => {
+    const partId = selectedOrder.orderitems[partKey]._id;
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      try {
+        await axios.delete(`${Config.api_url}/deleteInventory/${partId}`);
+        onDeletePart(partKey);
+      } catch (error) {
+        console.error("Error deleting inventory item:", error);
+      }
     }
   };
 
@@ -194,14 +175,14 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
                       secondary={`${item.quantity} units, $${item.perPartPrice}`}
                       sx={{ ml: 2 }}
                     />
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => handleEditClick(index)}
-                      sx={{ ml: "auto" }}
-                    >
-                      Edit
-                    </Button>
+                    <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+                      <IconButton onClick={() => handleEditClick(index)} color="primary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeletePart(index)} color="secondary">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </>
                 )}
               </ListItem>
@@ -212,8 +193,6 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
     </Box>
   );
 };
-
-const Separator = () => <Divider sx={{ my: 2 }} />;
 
 const TrackOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -251,6 +230,16 @@ const TrackOrders = () => {
     });
   };
 
+  const handleDeletePart = (partKey) => {
+    setSelectedOrder((prevOrder) => {
+      const updatedOrderItems = prevOrder.orderitems.filter((_, index) => index !== partKey);
+      return {
+        ...prevOrder,
+        orderitems: updatedOrderItems,
+      };
+    });
+  };
+
   return (
     <Container>
       <Grid container spacing={2}>
@@ -258,7 +247,7 @@ const TrackOrders = () => {
           <OrdersTab orders={orders} onSelectOrder={handleSelectOrder} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <OrderPreview selectedOrder={selectedOrder} onEditPart={handleEditPart} />
+          <OrderPreview selectedOrder={selectedOrder} onEditPart={handleEditPart} onDeletePart={handleDeletePart} />
         </Grid>
       </Grid>
     </Container>
