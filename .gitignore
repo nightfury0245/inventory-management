@@ -1,2 +1,4 @@
 node_modules/
 apienv/
+# config.cpython-39.pyc/
+backend/api/__pycache__/
