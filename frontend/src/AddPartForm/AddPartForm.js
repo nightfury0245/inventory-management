@@ -4,6 +4,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
+import Config from '../../Config';
 
 export default function AddPartForm() {
   const [parts, setParts] = useState([{
@@ -60,7 +61,7 @@ export default function AddPartForm() {
       const formData = new FormData();
       formData.append('invoice', file);
       try {
-        const response = await axios.post('http://127.0.0.1:5000/process_invoice', formData, {
+        const response = await axios.post(Config.api_url + '/process_invoice', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -97,7 +98,7 @@ export default function AddPartForm() {
         if (part.imageFile) {
           formData.append('imageFile', part.imageFile);
         }
-        await axios.post('http://127.0.0.1:5000/addInventory', formData, {
+        await axios.post(Config.api_url + '/addInventory', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

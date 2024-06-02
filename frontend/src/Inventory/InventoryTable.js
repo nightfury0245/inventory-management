@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import QRCode from 'qrcode.react';
+import Config from "../../Config";
 
 const InventoryTable = () => {
   const [parts, setParts] = useState([]);
@@ -20,7 +21,8 @@ const InventoryTable = () => {
 
   const fetchInventory = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:5000/getInventory');
+      console.log(Config.api_url + '/getInventory');
+      const response = await axios.get(Config.api_url + '/getInventory');
       setParts(response.data);
     } catch (error) {
       console.error("Error fetching inventory", error);
@@ -104,7 +106,7 @@ const InventoryTable = () => {
               <TableCell>{part.quantity}</TableCell>
               <TableCell>{part.date}</TableCell>
               <TableCell>
-                <img src={`http://127.0.0.1:5000/uploads/${part.imageFile}`} alt={part.partName} width="50" />
+                <img src={Config.api_url+`/uploads/${part.imageFile}`} alt={part.partName} width="50" />
               </TableCell>
               <TableCell>
                 <IconButton onClick={() => handleViewClick(part)}>

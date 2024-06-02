@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import axios from 'axios';
+import Config from '../../Config';
 
 const NewOrder = () => {
   const [partsData, setPartsData] = useState([
@@ -52,7 +53,7 @@ const NewOrder = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/getInventory');
+        const response = await axios.get(Config.api_url + '/getInventory');
         if (response && response.data) {
           setPartsData(response.data);
         } else {
