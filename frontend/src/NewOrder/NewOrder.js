@@ -21,21 +21,16 @@ import axios from 'axios';
 import Config from '../../Config';
 
 const NewOrder = () => {
-  const [partsData, setPartsData] = useState([
-    { "partName": "Part A", "quantity": 10 },
-    { "partName": "Part B", "quantity": 20 },
-    { "partName": "Part C", "quantity": 30 },
-    { "partName": "Part D", "quantity": 40 },
-    { "partName": "Part E", "quantity": 50 },
-  ]);
+  const [partsData, setPartsData] = useState([]);
   const [selectedPart, setSelectedPart] = useState("");
   const [orderName, setOrderName] = useState("");
   const [requiredQuantity, setRequiredQuantity] = useState(1);
-  const [perPartPrice, setperPartPrice] = useState(-1);
+  const [perPartPrice, setPerPartPrice] = useState(-1);
   const [orderItems, setOrderItems] = useState([]);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [isHorizontalLayout, setIsHorizontalLayout] = useState(true);
-  const [uploadedImage, setUploadedImage] = useState(null); // New state for uploaded image
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [orderImageFile, setOrderImageFile] = useState(null); // New state for order image file
 
   useEffect(() => {
     const handleResize = () => {
@@ -73,6 +68,12 @@ const NewOrder = () => {
     };
   }, []);
 
+  const getPerPartPrice = (partName) => {
+    console.log("partname split", partName.split(':')[0]);
+    const partObj = partsData.find(part => part["partName"] === partName.split(':')[0].trim());
+    return partObj ? partObj["perPartPrice"] : -1;
+  };
+
   const handleAddPart = () => {
     if (selectedPart && requiredQuantity > 0) {
       const existingIndex = orderItems.findIndex(
@@ -84,18 +85,20 @@ const NewOrder = () => {
         updatedOrderItems[existingIndex].quantity += requiredQuantity;
         setOrderItems(updatedOrderItems);
       } else {
+        const partData = partsData.find(part => part["partName"] === selectedPart.split(':')[0].trim());
         // If the part doesn't exist in the order, add it as a new row
         const newOrderItem = {
           partName: selectedPart,
           quantity: requiredQuantity,
-          perPartPrice: getperPartPrice(selectedPart),
+          perPartPrice: partData.perPartPrice,
+          partId: partData._id
         };
         setOrderItems([...orderItems, newOrderItem]);
       }
       // Reset input fields
       setSelectedPart("");
       setRequiredQuantity(1);
-      setperPartPrice(-1);
+      setPerPartPrice(-1);
     }
     console.log("orderItems : ", orderItems);
   };
@@ -120,19 +123,21 @@ const NewOrder = () => {
     }, 0);
   };
 
-  const getperPartPrice = (partName) => {
-    console.log("partname split", partName.split(':')[0]);
-    const partObj = partsData.find(part => part["partName"] === partName.split(':')[0].trim());
-    return partObj ? partObj["perPartPrice"] : -1;
-  };
-
   const handlePlaceOrder = async (ordername, orderitems) => {
+    const formData = new FormData();
+    formData.append('ordername', ordername);
+    formData.append('orderitems', JSON.stringify(orderitems));
+    if (orderImageFile) {
+      formData.append('orderImage', orderImageFile);
+    }
+
     try {
         console.log("Order placed");
         console.log(ordername, orderitems);
-        const response = await axios.post(`${Config.api_url}/placeOrder`, {
-            ordername,
-            orderitems,
+        const response = await axios.post(`${Config.api_url}/placeOrder`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         });
         console.log(response.status);
         // reset all values once an order is placed successfully.
@@ -140,26 +145,21 @@ const NewOrder = () => {
         setOrderItems([]);
         setRequiredQuantity(1);
         setSelectedPart("");
+        setUploadedImage(null);
+        setOrderImageFile(null);
     } catch (error) {
         if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
             console.log('Error response:', error.response.data);
             console.log('Error status:', error.response.status);
         } else if (error.request) {
-            // The request was made but no response was received
             console.log('Error request:', error.request);
         } else {
-            // Something happened in setting up the request that triggered an Error
             console.log('Error message:', error.message);
         }
-    }
-    finally{
-      // close the order confirmation page
+    } finally {
       handleCloseConfirmation();
     }
-};
-
+  };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -169,6 +169,7 @@ const NewOrder = () => {
         setUploadedImage(e.target.result);
       };
       reader.readAsDataURL(file);
+      setOrderImageFile(file); // Set the image file for upload
     }
   };
 
@@ -209,7 +210,7 @@ const NewOrder = () => {
             value={selectedPart}
             onChange={(event, newValue) => {
               setSelectedPart(newValue.split(':')[0].trim());
-              setperPartPrice(getperPartPrice(newValue));
+              setPerPartPrice(getPerPartPrice(newValue));
             }}
             renderInput={(params) => (
               <TextField {...params} label="Select Part" variant="outlined" />
@@ -239,7 +240,7 @@ const NewOrder = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>partName</TableCell>
+                  <TableCell>Part Name</TableCell>
                   <TableCell>Quantity</TableCell>
                   <TableCell>Action</TableCell>
                 </TableRow>
@@ -273,7 +274,7 @@ const NewOrder = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>partName</TableCell>
+                      <TableCell>Part Name</TableCell>
                       <TableCell>Required Quantity</TableCell>
                       <TableCell>Estimated Cost</TableCell>
                     </TableRow>
@@ -283,7 +284,7 @@ const NewOrder = () => {
                       <TableRow key={index}>
                         <TableCell>{item.partName}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.quantity * item.perPartPrice}</TableCell> {/* Estimated Cost */}
+                        <TableCell>{item.quantity * item.perPartPrice}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -291,7 +292,7 @@ const NewOrder = () => {
               </TableContainer>
               <TextField
                 label="Total Order Estimate"
-                value={getTotalOrderCost()} // Display Total Order Estimate
+                value={getTotalOrderCost()}
                 variant="outlined"
                 InputProps={{
                   readOnly: true,
@@ -300,8 +301,8 @@ const NewOrder = () => {
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={()=>handleCloseConfirmation}>Go back and edit</Button>
-              <Button onClick={async()=>await handlePlaceOrder(orderName,orderItems)}>Place order</Button> {/* Call handlePlaceOrder function */}
+              <Button onClick={handleCloseConfirmation}>Go back and edit</Button>
+              <Button onClick={async () => await handlePlaceOrder(orderName, orderItems)}>Place order</Button>
             </DialogActions>
           </Dialog>
         </div>

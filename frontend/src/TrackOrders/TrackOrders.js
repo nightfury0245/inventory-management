@@ -3,13 +3,10 @@ import axios from "axios";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   CardMedia,
   Container,
   Divider,
   Grid,
-  IconButton,
   List,
   ListItem,
   ListItemText,
@@ -18,55 +15,11 @@ import {
   Typography,
 } from "@mui/material";
 import { PhotoCamera } from "@mui/icons-material";
-import imagePaths from "./imagePaths.json";
-
-// Import image paths
-const { pumpImages, partImages } = imagePaths;
-
-const getRandomImage = (images) => images[Math.floor(Math.random() * images.length)];
-
-const dummyOrders = [
-  {
-    id: 1,
-    order_name: "Service Order 1",
-    status: "completed",
-    image: getRandomImage(pumpImages),
-    data: {
-      "Mechanical Part A": { quantity: 10, cost: "$100", expiration: "2024-12-31", image: getRandomImage(partImages) },
-      "Electrical Part B": { quantity: 5, cost: "$200", expiration: "2024-11-30", image: getRandomImage(partImages) },
-    },
-  },
-  {
-    id: 2,
-    order_name: "Service Order 2",
-    status: "ongoing",
-    image: getRandomImage(pumpImages),
-    data: {
-      "Mechanical Part C": { quantity: 8, cost: "$150", expiration: "2025-01-15", image: getRandomImage(partImages) },
-      "Electrical Part D": { quantity: 3, cost: "$300", expiration: "2025-02-20", image: getRandomImage(partImages) },
-    },
-  },
-  // Add more dummy orders as needed
-];
+import Config from '../../Config';
 
 const OrdersTab = ({ orders, onSelectOrder }) => {
   const handleOrderClick = (order) => {
     onSelectOrder(order);
-  };
-
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "completed":
-        return "completed";
-      case "ongoing":
-        return "ongoing";
-      case "haulted":
-        return "haulted";
-      case "aborted":
-        return "aborted";
-      default:
-        return "";
-    }
   };
 
   return (
@@ -75,24 +28,27 @@ const OrdersTab = ({ orders, onSelectOrder }) => {
       <List>
         {orders.map((order) => (
           <ListItem
-            key={order.id}
+            key={order._id.$oid}
             button
             onClick={() => handleOrderClick(order)}
-            sx={{ borderLeft: 5, marginBottom: 1, ...(order.status === "completed" && { borderLeftColor: "#4caf50" }),
-                ...(order.status === "ongoing" && { borderLeftColor: "#ffeb3b" }),
-                ...(order.status === "haulted" && { borderLeftColor: "#f44336" }),
-                ...(order.status === "aborted" && { borderLeftColor: "#9e9e9e" })
+            sx={{
+              borderLeft: 5,
+              marginBottom: 1,
+              ...(order.status === "completed" && { borderLeftColor: "#4caf50" }),
+              ...(order.status === "ongoing" && { borderLeftColor: "#ffeb3b" }),
+              ...(order.status === "haulted" && { borderLeftColor: "#f44336" }),
+              ...(order.status === "aborted" && { borderLeftColor: "#9e9e9e" })
             }}
           >
             <ListItemAvatar>
               <CardMedia
                 component="img"
                 sx={{ width: 56, height: 56, borderRadius: "50%" }}
-                image={order.image}
-                alt={order.order_name}
+                image={Config.api_url + "/uploads/" + order.orderImage || "default-image-path"}  // Use default image if not provided
+                alt={order.ordername}
               />
             </ListItemAvatar>
-            <ListItemText primary={order.order_name} secondary={order.status} />
+            <ListItemText primary={order.ordername} secondary={order.status} />
           </ListItem>
         ))}
       </List>
@@ -136,21 +92,11 @@ const PartEditForm = ({ part, partKey, onSave }) => {
       <TextField
         label="Cost"
         type="text"
-        name="cost"
-        value={editedPart.cost}
+        name="perPartPrice"
+        value={editedPart.perPartPrice}
         onChange={handleInputChange}
         fullWidth
         margin="normal"
-      />
-      <TextField
-        label="Expiration"
-        type="date"
-        name="expiration"
-        value={editedPart.expiration}
-        onChange={handleInputChange}
-        fullWidth
-        margin="normal"
-        InputLabelProps={{ shrink: true }}
       />
       <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
         <Button
@@ -182,9 +128,16 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
     setEditingPart(partKey);
   };
 
-  const handleSavePart = (partKey, editedPart) => {
+  const handleSavePart = async (partKey, editedPart) => {
     onEditPart(partKey, editedPart);
     setEditingPart(null);
+
+    // Send the updated part to the backend
+    try {
+      await axios.put(`${Config.api_url}/updateInventory/${editedPart._id}`, editedPart);
+    } catch (error) {
+      console.error("Error updating inventory item:", error);
+    }
   };
 
   const handlePumpImageUpload = (e) => {
@@ -204,46 +157,47 @@ const OrderPreview = ({ selectedOrder, onEditPart }) => {
           <CardMedia
             component="img"
             sx={{ width: 100, height: 100, borderRadius: 1, mb: 2 }}
-            image={selectedOrder.image}
-            alt={selectedOrder.order_name}
+            image={Config.api_url + "/uploads/" + selectedOrder.orderImage || "default-image-path"}  // Use default image if not provided
+            alt={selectedOrder.ordername}
           />
-          <Typography variant="h6" gutterBottom>{selectedOrder.order_name}</Typography>
+          <Typography variant="h6" gutterBottom>{selectedOrder.ordername}</Typography>
           <Typography variant="body1">Status: {selectedOrder.status}</Typography>
+          <Typography variant="body1">Order ID: {selectedOrder._id.$oid}</Typography>
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"
               component="label"
               startIcon={<PhotoCamera />}
             >
-              Change Pump Image
+              Change Order Image
               <input type="file" hidden onChange={handlePumpImageUpload} />
             </Button>
           </Box>
-          <Typography variant="h6" sx={{ mt: 2 }}>Data:</Typography>
+          <Typography variant="h6" sx={{ mt: 2 }}>Order Items:</Typography>
           <List>
-            {Object.entries(selectedOrder.data).map(([key, value]) => (
-              <ListItem key={key} sx={{ alignItems: "flex-start" }}>
-                {editingPart === key ? (
-                  <PartEditForm part={value} partKey={key} onSave={handleSavePart} />
+            {selectedOrder.orderitems.map((item, index) => (
+              <ListItem key={index} sx={{ alignItems: "flex-start" }}>
+                {editingPart === index ? (
+                  <PartEditForm part={item} partKey={index} onSave={handleSavePart} />
                 ) : (
                   <>
                     <ListItemAvatar>
                       <CardMedia
                         component="img"
                         sx={{ width: 56, height: 56, borderRadius: 1 }}
-                        image={value.image}
-                        alt={key}
+                        image={Config.api_url + "/uploads/" + item.image || "default-image-path"}  // Use default image if not provided
+                        alt={item.partName}
                       />
                     </ListItemAvatar>
                     <ListItemText
-                      primary={<Typography variant="subtitle1"><strong>{key}:</strong></Typography>}
-                      secondary={`${value.quantity} units, ${value.cost}, Expires on ${value.expiration}`}
+                      primary={<Typography variant="subtitle1"><strong>{item.partName}:</strong></Typography>}
+                      secondary={`${item.quantity} units, $${item.perPartPrice}`}
                       sx={{ ml: 2 }}
                     />
                     <Button
                       variant="outlined"
                       color="primary"
-                      onClick={() => handleEditClick(key)}
+                      onClick={() => handleEditClick(index)}
                       sx={{ ml: "auto" }}
                     >
                       Edit
@@ -267,12 +221,12 @@ const TrackOrders = () => {
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      // Uncomment the following lines to fetch data from the API
-      // const response = await axios.get("http://192.168.1.9:3003/orders");
-      // setOrders(response.data);
-
-      // Use dummy data for now
-      setOrders(dummyOrders);
+      try {
+        const response = await axios.get(`${Config.api_url}/getOrders`);
+        setOrders(response.data);
+      } catch (error) {
+        console.error('Error fetching order data:', error);
+      }
     };
 
     fetchOrderDetails();
@@ -284,15 +238,14 @@ const TrackOrders = () => {
 
   const handleEditPart = (partKey, editedPart) => {
     setSelectedOrder((prevOrder) => {
+      const updatedOrderItems = [...prevOrder.orderitems];
       if (partKey === "pumpImage") {
-        return { ...prevOrder, image: editedPart };
+        return { ...prevOrder, orderImage: editedPart };
       } else {
+        updatedOrderItems[partKey] = editedPart;
         return {
           ...prevOrder,
-          data: {
-            ...prevOrder.data,
-            [partKey]: editedPart,
-          },
+          orderitems: updatedOrderItems,
         };
       }
     });

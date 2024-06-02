@@ -7,7 +7,6 @@ from werkzeug.utils import secure_filename
 import config
 import os
 import traceback
-import subprocess
 
 app = Flask(__name__)
 CORS(app)
@@ -28,29 +27,60 @@ def helloworld():
 
 @app.route("/getInventory", methods=['GET'])
 def getInventory():
-    return_list = []
-    documents = inventory_collection.find()
-    documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
-    return documents_array
-
-@app.route("/placeOrder", methods=["GET", "POST"])
-def placeOrder():
-    body = request.get_json()
-    ordername = body['ordername']
-    orderItems = body['orderitems']
-    order_document = {
-        'ordername': ordername,
-        'orderitems': orderItems
-    }
-    # Todo : 1
     try:
+        documents = inventory_collection.find()
+        documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
+        return documents_array
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
+@app.route("/getOrders", methods=['GET'])
+def getOrders():
+    try:
+        orders = neworder_collection.find()
+        orders_array = json.dumps([json.loads(json.dumps(order, default=str)) for order in orders])
+        return orders_array
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
+@app.route("/placeOrder", methods=["POST"])
+def placeOrder():
+    try:
+        body = request.form.to_dict()
+        ordername = body['ordername']
+        orderitems = json.loads(body['orderitems'])
+
+        order_document = {
+            'ordername': ordername,
+            'orderitems': orderitems,
+            'status': 'ongoing'  # Default status when placing a new order
+        }
+
+        if 'orderImage' in request.files:
+            order_image = request.files['orderImage']
+            image_filename = secure_filename(order_image.filename)
+            order_image.save(os.path.join(UPLOAD_FOLDER, image_filename))
+            order_document['orderImage'] = image_filename
+
         status = neworder_collection.insert_one(order_document)
         if status.acknowledged:
             return jsonify({"message": "Order placed successfully"}), 200
         else:
             return jsonify({"message": "Error placing order"}), 500
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
 
 @app.route("/addInventory", methods=['POST'])
 def addInventory():
@@ -109,32 +139,36 @@ def deleteInventory(id):
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-@app.route('/process_invoice', methods=['POST'])
-def process_invoice():
+@app.route('/updateOrder/<id>', methods=['PUT'])
+def updateOrder(id):
     try:
-        file = request.files['invoice']
-        if file:
-            file_path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
-            file.save(file_path)
-            result = subprocess.run(
-                ['python', 'extract_features.py', file_path],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode != 0:
-                return jsonify({'error': 'Failed to process invoice'}), 500
-            return result.stdout
-        return jsonify({"error": "No file provided"}), 400
+        order = request.get_json()
+        if '_id' in order:
+            del order['_id']
+        neworder_collection.update_one({'_id': ObjectId(id)}, {'$set': order})
+        return jsonify({'message': 'Order updated successfully'}), 200
     except Exception as e:
         error_message = str(e)
         error_traceback = traceback.format_exc()
         print(f"Error: {error_message}")
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
+
+@app.route('/deleteOrder/<id>', methods=['DELETE'])
+def deleteOrder(id):
+    try:
+        neworder_collection.delete_one({'_id': ObjectId(id)})
+        return jsonify({'message': 'Order deleted successfully'}), 200
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == "__main__":
     app.run(debug=True, host="192.168.1.4", port=5000)
