@@ -22,16 +22,16 @@ import Config from '../../Config';
 
 const NewOrder = () => {
   const [partsData, setPartsData] = useState([
-    { "partName": "Part A", "quantity": 10 },
-    { "partName": "Part B", "quantity": 20 },
-    { "partName": "Part C", "quantity": 30 },
-    { "partName": "Part D", "quantity": 40 },
-    { "partName": "Part E", "quantity": 50 },
+    { "Part Name": "Part A", "available quantity": 10 },
+    { "Part Name": "Part B", "available quantity": 20 },
+    { "Part Name": "Part C", "available quantity": 30 },
+    { "Part Name": "Part D", "available quantity": 40 },
+    { "Part Name": "Part E", "available quantity": 50 },
   ]);
   const [selectedPart, setSelectedPart] = useState("");
   const [orderName, setOrderName] = useState("");
   const [requiredQuantity, setRequiredQuantity] = useState(1);
-  const [perPartPrice, setperPartPrice] = useState(-1);
+  const [pricePerUnit, setPricePerUnit] = useState(-1);
   const [orderItems, setOrderItems] = useState([]);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [isHorizontalLayout, setIsHorizontalLayout] = useState(true);
@@ -76,7 +76,7 @@ const NewOrder = () => {
   const handleAddPart = () => {
     if (selectedPart && requiredQuantity > 0) {
       const existingIndex = orderItems.findIndex(
-        (item) => item["partName"] === selectedPart
+        (item) => item["Part Name"] === selectedPart
       );
       if (existingIndex !== -1) {
         // If the part already exists in the order, update the quantity
@@ -88,14 +88,14 @@ const NewOrder = () => {
         const newOrderItem = {
           partName: selectedPart,
           quantity: requiredQuantity,
-          perPartPrice: getperPartPrice(selectedPart),
+          pricePerUnit: getPricePerUnit(selectedPart),
         };
         setOrderItems([...orderItems, newOrderItem]);
       }
       // Reset input fields
       setSelectedPart("");
       setRequiredQuantity(1);
-      setperPartPrice(-1);
+      setPricePerUnit(-1);
     }
     console.log("orderItems : ", orderItems);
   };
@@ -116,43 +116,27 @@ const NewOrder = () => {
 
   const getTotalOrderCost = () => {
     return orderItems.reduce((total, item) => {
-      return total + item.quantity * item.perPartPrice; // Calculate total cost
+      return total + item.quantity * item.pricePerUnit; // Calculate total cost
     }, 0);
   };
 
-  const getperPartPrice = (partName) => {
+  const getPricePerUnit = (partName) => {
     console.log("partname split", partName.split(':')[0]);
-    const partObj = partsData.find(part => part["partName"] === partName.split(':')[0].trim());
-    return partObj ? partObj["perPartPrice"] : -1;
+    const partObj = partsData.find(part => part["Part Name"] === partName.split(':')[0].trim());
+    return partObj ? partObj["price per unit"] : -1;
   };
 
-  const handlePlaceOrder = async (ordername, orderitems) => {
-    try {
-        console.log("Order placed");
-        console.log(ordername, orderitems);
-        const response = await axios.post(`${Config.api_url}/placeOrder`, {
-            ordername,
-            orderitems,
-        });
-        console.log(response.status);
-        handleCloseConfirmation();
-    } catch (error) {
-        if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
-            console.log('Error response:', error.response.data);
-            console.log('Error status:', error.response.status);
-        } else if (error.request) {
-            // The request was made but no response was received
-            console.log('Error request:', error.request);
-        } else {
-            // Something happened in setting up the request that triggered an Error
-            console.log('Error message:', error.message);
-        }
-        handleCloseConfirmation();
-    }
-};
+  const handlePlaceOrder = async(ordername, orderitems) => {
+    console.log("Order placed");
+    console.log(ordername,orderitems);
+    // todo write an API request to send the order data to the server
+    const placeorderResponse = await axios.post("http://localhost:5000/placeorder", {
+      ordername,
+      orderitems,
+    }).then(console.log("called API to place order"))
 
+    console.log(placeorderResponse.status)
+  };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -198,11 +182,11 @@ const NewOrder = () => {
             style={{ marginBottom: 16 }}
           />
           <Autocomplete
-            options={partsData.map((part) => part["partName"] + " : " + part["quantity"] + " available")}
+            options={partsData.map((part) => part["Part Name"] + " : " + part["available quantity"] + " available")}
             value={selectedPart}
             onChange={(event, newValue) => {
               setSelectedPart(newValue.split(':')[0].trim());
-              setperPartPrice(getperPartPrice(newValue));
+              setPricePerUnit(getPricePerUnit(newValue));
             }}
             renderInput={(params) => (
               <TextField {...params} label="Select Part" variant="outlined" />
@@ -232,7 +216,7 @@ const NewOrder = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>partName</TableCell>
+                  <TableCell>Part Name</TableCell>
                   <TableCell>Quantity</TableCell>
                   <TableCell>Action</TableCell>
                 </TableRow>
@@ -266,7 +250,7 @@ const NewOrder = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>partName</TableCell>
+                      <TableCell>Part Name</TableCell>
                       <TableCell>Required Quantity</TableCell>
                       <TableCell>Estimated Cost</TableCell>
                     </TableRow>
@@ -276,7 +260,7 @@ const NewOrder = () => {
                       <TableRow key={index}>
                         <TableCell>{item.partName}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.quantity * item.perPartPrice}</TableCell> {/* Estimated Cost */}
+                        <TableCell>{item.quantity * item.pricePerUnit}</TableCell> {/* Estimated Cost */}
                       </TableRow>
                     ))}
                   </TableBody>

@@ -42,7 +42,7 @@ const InventoryTable = () => {
   const handleDeleteClick = async (id) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        await axios.delete(`http://127.0.0.1:5000/deleteInventory/${id}`);
+        await axios.delete(Config.api_url+`/deleteInventory/${id}`);
         fetchInventory();
       } catch (error) {
         console.error("Error deleting inventory item", error);
@@ -52,7 +52,7 @@ const InventoryTable = () => {
 
   const handleEditSave = async () => {
     try {
-      await axios.put(`http://127.0.0.1:5000/updateInventory/${currentPart._id.$oid}`, currentPart);
+      await axios.put(Config.api_url+`/updateInventory/${currentPart._id}`, currentPart);
       setOpenEditDialog(false);
       fetchInventory();
     } catch (error) {
@@ -75,7 +75,7 @@ const InventoryTable = () => {
 
   const handleDownloadInvoice = (invoiceFile) => {
     const downloadLink = document.createElement("a");
-    downloadLink.href = `http://127.0.0.1:5000/uploads/${invoiceFile}`;
+    downloadLink.href = Config.api_url+`/uploads/${invoiceFile}`;
     downloadLink.download = invoiceFile;
     document.body.appendChild(downloadLink);
     downloadLink.click();
@@ -101,7 +101,7 @@ const InventoryTable = () => {
         </TableHead>
         <TableBody>
           {parts.map((part) => (
-            <TableRow key={part._id.$oid}>
+            <TableRow key={part._id}>
               <TableCell>{part.partName}</TableCell>
               <TableCell>{part.quantity}</TableCell>
               <TableCell>{part.date}</TableCell>
@@ -115,7 +115,7 @@ const InventoryTable = () => {
                 <IconButton onClick={() => handleEditClick(part)}>
                   <EditIcon />
                 </IconButton>
-                <IconButton onClick={() => handleDeleteClick(part._id.$oid)}>
+                <IconButton onClick={() => handleDeleteClick(part._id)}>
                   <DeleteIcon />
                 </IconButton>
               </TableCell>
@@ -129,15 +129,15 @@ const InventoryTable = () => {
           <DialogTitle>Part Details</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              <strong>ID:</strong> {currentPart._id.$oid}<br />
+              <strong>ID:</strong> {currentPart._id}<br />
               <strong>Name:</strong> {currentPart.partName}<br />
               <strong>Quantity:</strong> {currentPart.quantity}<br />
               <strong>Date:</strong> {currentPart.date}
             </DialogContentText>
-            {currentPart._id && <QRCode id={`qrcode-${currentPart._id.$oid}`} value={currentPart._id.$oid} />}
+            {currentPart._id && <QRCode id={`qrcode-${currentPart._id}`} value={currentPart._id} />}
           </DialogContent>
           <DialogActions>
-            {currentPart._id && <Button onClick={() => handleDownloadQRCode(currentPart._id.$oid)}>Download QR Code</Button>}
+            {currentPart._id && <Button onClick={() => handleDownloadQRCode(currentPart._id)}>Download QR Code</Button>}
             {currentPart.invoiceFile && <Button onClick={() => handleDownloadInvoice(currentPart.invoiceFile)}>Download Invoice</Button>}
             <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
           </DialogActions>

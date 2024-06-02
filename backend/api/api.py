@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pymongo
+from bson import ObjectId
 import json
 from werkzeug.utils import secure_filename
 import config
@@ -27,39 +28,25 @@ def helloworld():
 
 @app.route("/getInventory", methods=['GET'])
 def getInventory():
-    # write a python script to connect to mongoDB and retrieve the inventory data
-    # Frontend expects the following format:
-    # id, Part Name, MFD, Unit of Measurement, available quantity, price per unit, part image, invoice image
     return_list = []
-    # Retrieve all documents from the inventory_collection
     documents = inventory_collection.find()
     documents_array = json.dumps([json.loads(json.dumps(doc, default=str)) for doc in documents])
-
-    # for document in documents_array:
-    #     json_doc = json.loads(document)
-    #     temp = {}
-        # compute total quantity available
-
     return documents_array
 
 @app.route("/placeOrder", methods=["GET", "POST"])
 def placeOrder():
-    # Parse the request data
     body = request.get_json()
     ordername = body['ordername']
     orderItems = body['orderitems']
-
-    # Create the order document to insert
     order_document = {
         'ordername': ordername,
         'orderitems': orderItems
     }
-
-    # MongoDB query to insert order into the database
+    # Todo : 1
     try:
         status = neworder_collection.insert_one(order_document)
         if status.acknowledged:
-            return jsonify({"message": "Order placed successfully"}), 201
+            return jsonify({"message": "Order placed successfully"}), 200
         else:
             return jsonify({"message": "Error placing order"}), 500
     except Exception as e:
@@ -76,20 +63,17 @@ def addInventory():
             'quantity': request.form.get('quantity'),
             'invoiceNumber': request.form.get('invoiceNumber'),
         }
-
         if 'invoiceFile' in request.files:
             invoice_file = request.files['invoiceFile']
             invoice_filename = secure_filename(invoice_file.filename)
             invoice_file.save(os.path.join(UPLOAD_FOLDER, invoice_filename))
             part['invoiceFile'] = invoice_filename
-
         if 'imageFile' in request.files:
             image_file = request.files['imageFile']
             image_filename = secure_filename(image_file.filename)
             image_file.save(os.path.join(UPLOAD_FOLDER, image_filename))
             part['imageFile'] = image_filename
-
-        collection.insert_one(part)
+        inventory_collection.insert_one(part)
         return jsonify({'message': 'Inventory added successfully'}), 200
     except Exception as e:
         error_message = str(e)
@@ -102,7 +86,9 @@ def addInventory():
 def updateInventory(id):
     try:
         part = request.get_json()
-        collection.update_one({'_id': pymongo.ObjectId(id)}, {'$set': part})
+        if '_id' in part:
+            del part['_id']
+        inventory_collection.update_one({'_id': ObjectId(id)}, {'$set': part})
         return jsonify({'message': 'Inventory updated successfully'}), 200
     except Exception as e:
         error_message = str(e)
@@ -114,7 +100,7 @@ def updateInventory(id):
 @app.route('/deleteInventory/<id>', methods=['DELETE'])
 def deleteInventory(id):
     try:
-        collection.delete_one({'_id': pymongo.ObjectId(id)})
+        inventory_collection.delete_one({'_id': ObjectId(id)})
         return jsonify({'message': 'Inventory deleted successfully'}), 200
     except Exception as e:
         error_message = str(e)

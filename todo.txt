@@ -1,1 +1,1 @@
-1. Change icons in dashboard
+1. Duplicate order names shoueld not be allowed. Change the code in placeorder in api.py to throw error when the order name already exists.
