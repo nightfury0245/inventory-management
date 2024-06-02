@@ -135,7 +135,9 @@ const NewOrder = () => {
             orderitems,
         });
         console.log(response.status);
-        handleCloseConfirmation();
+        // reset all values once an order is placed successfully.
+        // using page reload 
+        location.reload();
     } catch (error) {
         if (error.response) {
             // The request was made and the server responded with a status code
@@ -149,7 +151,10 @@ const NewOrder = () => {
             // Something happened in setting up the request that triggered an Error
             console.log('Error message:', error.message);
         }
-        handleCloseConfirmation();
+    }
+    finally{
+      // close the order confirmation page
+      handleCloseConfirmation();
     }
 };
 

@@ -1,1 +1,2 @@
 1. Duplicate order names shoueld not be allowed. Change the code in placeorder in api.py to throw error when the order name already exists.
+2. User should not get logged out when the page refreshes. Use session storage to handle this.
