@@ -7,6 +7,10 @@ from werkzeug.utils import secure_filename
 import config
 import os
 import traceback
+import spacy
+import tabula
+import pandas as pd
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +24,58 @@ neworder_collection = db[config.neworder_poc_collection_name]
 UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def clean_table(table):
+    table = table.dropna(how='all')
+    table = table.applymap(lambda x: x.replace('\t', '').strip() if isinstance(x, str) else x)
+    
+    return table
+
+def remove_special_characters(text):
+    return re.sub(r'[^A-Za-z0-9 ]+', '', text)
+
+def row_to_single_string(row):
+    row = row.dropna()
+    combined_string = ' '.join(row.astype(str)).replace('\n', '')
+    cleaned_string = remove_special_characters(combined_string)
+    return cleaned_string
+
+def extract_and_process_tables_from_pdf(pdf_path):
+    tables = tabula.read_pdf(pdf_path, pages='all', multiple_tables=True)
+    
+    cleaned_tables = [clean_table(table) for table in tables]
+    combined_table = pd.concat(cleaned_tables, ignore_index=True)
+    
+    combined_table_as_strings = combined_table.apply(row_to_single_string, axis=1).tolist()
+    
+    return combined_table_as_strings
+
+def load_model(model_path):
+    model = spacy.load(model_path)
+    return model
+
+def classify_sentence_for_validity(nlp, sentence):
+    doc = nlp(sentence)
+    return doc.cats
+
+def classify_sentence(nlp, sentence):
+    doc = nlp(sentence)
+    entities = {ent.label_: ent.text for ent in doc.ents}
+    return (sentence, entities)
+
+def extract_classify_and_print_valid_sentences(pdf_path, model_path, entity_model_path):
+    processed_sentences = extract_and_process_tables_from_pdf(pdf_path)
+    validity_nlp = load_model(model_path)
+    entity_nlp = load_model(entity_model_path)
+    valid_sentences = []
+    for sentence in processed_sentences:
+        classification = classify_sentence_for_validity(validity_nlp, sentence)
+        if classification.get("VALID", 0.5) >= 0.5:
+            valid_sentence, entities = classify_sentence(entity_nlp, sentence)
+            valid_sentences.append({"sentence": valid_sentence, "entities": entities})
+    valid_sentences_json = json.dumps({"valid_sentences": valid_sentences}, indent=4)
+    
+    return valid_sentences_json
 
 @app.route("/", methods=['GET'])
 def helloworld():
@@ -170,5 +226,32 @@ def deleteOrder(id):
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-if __name__ == "__main__":
-    app.run(debug=True, host="192.168.1.4", port=5000)
+@app.route('/process_invoice', methods=['POST'])
+def process_invoice():
+    try:
+        if 'invoice' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        invoice_file = request.files['invoice']
+        filename = secure_filename(invoice_file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        invoice_file.save(filepath)
+
+        # Path to your trained spaCy models
+        validity_model_path = './textcat_model'
+        entity_model_path = './model'
+
+        # Extract and classify sentences from the uploaded PDF
+        result = extract_classify_and_print_valid_sentences(filepath, validity_model_path, entity_model_path)
+        result_dict = json.loads(result)  # Ensure it's a dictionary
+        return jsonify(result_dict), 200
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

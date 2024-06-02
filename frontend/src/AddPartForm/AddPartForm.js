@@ -8,22 +8,22 @@ import Config from '../../Config';
 
 export default function AddPartForm() {
   const [parts, setParts] = useState([{
+    invoiceNumber: '',
     partName: '',
     moi: '',
     perPartPrice: '',
-    imageFile: null,
     quantity: '',
-    invoiceNumber: '',
+    imageFile: null,
   }]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceFile, setInvoiceFile] = useState(null);
 
   const handlePartChange = (index, event) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value } = event.target;
     const updatedParts = [...parts];
     updatedParts[index] = {
       ...updatedParts[index],
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     };
     setParts(updatedParts);
   };
@@ -40,12 +40,12 @@ export default function AddPartForm() {
 
   const handlePartAdd = () => {
     setParts([...parts, {
+      invoiceNumber: '',
       partName: '',
       moi: '',
       perPartPrice: '',
-      imageFile: null,
       quantity: '',
-      invoiceNumber: '',
+      imageFile: null,
     }]);
   };
 
@@ -66,13 +66,15 @@ export default function AddPartForm() {
             'Content-Type': 'multipart/form-data',
           },
         });
-        const data = JSON.parse(response.data);
-        const extractedParts = data.valid_sentences.map(sentence => ({
-          partName: sentence.entities.partName || '',
-          moi: sentence.entities.moi || '',
-          perPartPrice: sentence.entities.perPartPrice || '',
-          quantity: sentence.entities.quantity || '',
-          invoiceNumber: sentence.entities.invoiceNumber || '',
+
+        const data = response.data.valid_sentences || []; // Handle undefined values
+
+        const extractedParts = data.map(sentence => ({
+          invoiceNumber: sentence.entities['INVOICE NUMBER'] || '',
+          partName: sentence.entities['PART NAME'] || '',
+          moi: sentence.entities['PIECE TYPE'] || '',
+          perPartPrice: sentence.entities['RATE'] || '',
+          quantity: sentence.entities['QUANTITY'] || '',
           imageFile: null,
         }));
         setParts(extractedParts);
@@ -128,6 +130,15 @@ export default function AddPartForm() {
         <Grid container spacing={2} key={index}>
           <Grid item xs={6}>
             <TextField
+              label="Invoice Number"
+              name="invoiceNumber"
+              value={part.invoiceNumber}
+              onChange={(event) => handlePartChange(index, event)}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
               label="Part Name"
               name="partName"
               value={part.partName}
@@ -137,7 +148,7 @@ export default function AddPartForm() {
           </Grid>
           <Grid item xs={6}>
             <TextField
-              label="MOI"
+              label="Piece Type (MOI)"
               name="moi"
               value={part.moi}
               onChange={(event) => handlePartChange(index, event)}
@@ -158,15 +169,6 @@ export default function AddPartForm() {
               label="Quantity"
               name="quantity"
               value={part.quantity}
-              onChange={(event) => handlePartChange(index, event)}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
-              label="Invoice Number"
-              name="invoiceNumber"
-              value={part.invoiceNumber}
               onChange={(event) => handlePartChange(index, event)}
               fullWidth
             />
