@@ -5,26 +5,29 @@ import {
   Button,
   CardMedia,
   Container,
-  Divider,
   Grid,
   List,
   ListItem,
   ListItemText,
   ListItemAvatar,
-  TextField,
   Typography,
   IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  TextField
 } from "@mui/material";
 import { PhotoCamera, Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
 import Config from '../../Config';
 
-const OrdersTab = ({ orders, onSelectOrder }) => {
+const OrdersTab = ({ orders, onSelectOrder, onUpdateOrderStatus }) => {
   const handleOrderClick = (order) => {
     onSelectOrder(order);
+  };
+
+  const handleStatusChange = (orderId, newStatus) => {
+    onUpdateOrderStatus(orderId, newStatus);
   };
 
   return (
@@ -53,7 +56,20 @@ const OrdersTab = ({ orders, onSelectOrder }) => {
                 alt={order.ordername}
               />
             </ListItemAvatar>
-            <ListItemText primary={order.ordername} secondary={order.status} />
+            <ListItemText primary={order.ordername} secondary={
+              <FormControl fullWidth variant="standard">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={order.status}
+                  onChange={(e) => handleStatusChange(order._id.$oid, e.target.value)}
+                >
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="ongoing">Ongoing</MenuItem>
+                  <MenuItem value="haulted">Haulted</MenuItem>
+                  <MenuItem value="aborted">Aborted</MenuItem>
+                </Select>
+              </FormControl>
+            } />
           </ListItem>
         ))}
       </List>
@@ -240,11 +256,27 @@ const TrackOrders = () => {
     });
   };
 
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await axios.put(`${Config.api_url}/updateOrder/${orderId}`, { status: newStatus });
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id.$oid === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      if (selectedOrder && selectedOrder._id.$oid === orderId) {
+        setSelectedOrder((prevOrder) => ({ ...prevOrder, status: newStatus }));
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    }
+  };
+
   return (
     <Container>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <OrdersTab orders={orders} onSelectOrder={handleSelectOrder} />
+          <OrdersTab orders={orders} onSelectOrder={handleSelectOrder} onUpdateOrderStatus={handleUpdateOrderStatus} />
         </Grid>
         <Grid item xs={12} md={6}>
           <OrderPreview selectedOrder={selectedOrder} onEditPart={handleEditPart} onDeletePart={handleDeletePart} />

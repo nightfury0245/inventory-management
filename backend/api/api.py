@@ -108,6 +108,34 @@ def getOrders():
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
 
+from bson.errors import InvalidId
+    
+@app.route("/updateOrder/<order_id>", methods=['PUT'])
+def updateOrder(order_id):
+    try:
+        # Validate the ObjectId
+        try:
+            object_id = ObjectId(order_id)
+        except InvalidId:
+            return jsonify({'error': f'Invalid ObjectId: {order_id}'}), 400
+
+        order_update = request.get_json()
+        # Ensure no '_id' field in the order update object
+        if '_id' in order_update:
+            del order_update['_id']
+
+        neworder_collection.update_one(
+            {'_id': object_id},
+            {'$set': order_update}
+        )
+        return jsonify({'message': 'Order updated successfully'}), 200
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        print(f"Error: {error_message}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': error_message}), 500
+
 @app.route("/placeOrder", methods=["POST"])
 def placeOrder():
     try:
@@ -189,33 +217,6 @@ def deleteInventory(id):
     try:
         inventory_collection.delete_one({'_id': ObjectId(id)})
         return jsonify({'message': 'Inventory deleted successfully'}), 200
-    except Exception as e:
-        error_message = str(e)
-        error_traceback = traceback.format_exc()
-        print(f"Error: {error_message}")
-        print(f"Traceback: {error_traceback}")
-        return jsonify({'error': error_message}), 500
-
-@app.route('/updateOrder/<id>', methods=['PUT'])
-def updateOrder(id):
-    try:
-        order = request.get_json()
-        if '_id' in order:
-            del order['_id']
-        neworder_collection.update_one({'_id': ObjectId(id)}, {'$set': order})
-        return jsonify({'message': 'Order updated successfully'}), 200
-    except Exception as e:
-        error_message = str(e)
-        error_traceback = traceback.format_exc()
-        print(f"Error: {error_message}")
-        print(f"Traceback: {error_traceback}")
-        return jsonify({'error': error_message}), 500
-
-@app.route('/deleteOrder/<id>', methods=['DELETE'])
-def deleteOrder(id):
-    try:
-        neworder_collection.delete_one({'_id': ObjectId(id)})
-        return jsonify({'message': 'Order deleted successfully'}), 200
     except Exception as e:
         error_message = str(e)
         error_traceback = traceback.format_exc()
