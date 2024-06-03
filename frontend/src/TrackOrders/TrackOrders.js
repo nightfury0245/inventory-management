@@ -16,9 +16,9 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TextField
+  TextField,
 } from "@mui/material";
-import { PhotoCamera, Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { PhotoCamera, Delete as DeleteIcon, Edit as EditIcon, CheckCircle, Cancel } from "@mui/icons-material";
 import Config from '../../Config';
 
 const OrdersTab = ({ orders, onSelectOrder, onUpdateOrderStatus }) => {
@@ -36,7 +36,7 @@ const OrdersTab = ({ orders, onSelectOrder, onUpdateOrderStatus }) => {
       <List>
         {orders.map((order) => (
           <ListItem
-            key={order._id.$oid}
+            key={order._id}
             button
             onClick={() => handleOrderClick(order)}
             sx={{
@@ -52,7 +52,7 @@ const OrdersTab = ({ orders, onSelectOrder, onUpdateOrderStatus }) => {
               <CardMedia
                 component="img"
                 sx={{ width: 56, height: 56, borderRadius: "50%" }}
-                image={Config.api_url + "/uploads/" + order.orderImage || "default-image-path"}  // Use default image if not provided
+                image={Config.api_url + "/uploads/" + (order.orderImage || "default-image-path")}
                 alt={order.ordername}
               />
             </ListItemAvatar>
@@ -61,7 +61,7 @@ const OrdersTab = ({ orders, onSelectOrder, onUpdateOrderStatus }) => {
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={order.status}
-                  onChange={(e) => handleStatusChange(order._id.$oid, e.target.value)}
+                  onChange={(e) => handleStatusChange(order._id, e.target.value)}
                 >
                   <MenuItem value="completed">Completed</MenuItem>
                   <MenuItem value="ongoing">Ongoing</MenuItem>
@@ -101,12 +101,21 @@ const PartEditForm = ({ part, partKey, onSave }) => {
         fullWidth
         margin="normal"
       />
+      <TextField
+        label="Date"
+        type="date"
+        name="date"
+        value={editedPart.date}
+        onChange={handleInputChange}
+        fullWidth
+        margin="normal"
+      />
       <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>Save</Button>
     </Box>
   );
 };
 
-const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
+const OrderPreview = ({ selectedOrder, inventory, onEditPart, onDeletePart }) => {
   const [editingPart, setEditingPart] = useState(null);
 
   const handleEditClick = (partKey) => {
@@ -117,22 +126,29 @@ const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
     onEditPart(partKey, editedPart);
     setEditingPart(null);
 
-    // Send the updated part to the backend
+    // Send the updated order to the backend
     try {
-      await axios.put(`${Config.api_url}/updateInventory/${editedPart._id}`, editedPart);
+      const updatedOrder = {
+        ...selectedOrder,
+        orderitems: selectedOrder.orderitems.map((item, index) =>
+          index === partKey ? editedPart : item
+        ),
+      };
+      await axios.put(`${Config.api_url}/updateOrder/${selectedOrder._id}`, updatedOrder);
     } catch (error) {
-      console.error("Error updating inventory item:", error);
+      console.error("Error updating order item:", error);
     }
   };
 
   const handleDeletePart = async (partKey) => {
-    const partId = selectedOrder.orderitems[partKey]._id;
+    const updatedOrderItems = selectedOrder.orderitems.filter((_, index) => index !== partKey);
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        await axios.delete(`${Config.api_url}/deleteInventory/${partId}`);
+        const updatedOrder = { ...selectedOrder, orderitems: updatedOrderItems };
+        await axios.put(`${Config.api_url}/updateOrder/${selectedOrder._id}`, updatedOrder);
         onDeletePart(partKey);
       } catch (error) {
-        console.error("Error deleting inventory item:", error);
+        console.error("Error deleting order item:", error);
       }
     }
   };
@@ -146,6 +162,27 @@ const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
     reader.readAsDataURL(file);
   };
 
+  const isApproved = (date) => {
+    const currentDate = new Date();
+    const partDate = new Date(date);
+    const diffInYears = (currentDate - partDate) / (1000 * 60 * 60 * 24 * 365);
+    return diffInYears < 5;
+  };
+
+  const getPartDate = (partId) => {
+    console.log("Date:", partId);
+    const part = inventory.find(item => item._id === partId);
+    console.log("Found part:", part);
+    return part ? part.date : 'N/A';
+  };
+  
+  const getPartQuantity = (partId) => {
+    console.log("Quantity:", partId);
+    const part = selectedOrder.orderitems.find(item => item._id === partId);
+    console.log("Found part:", part);
+    return part ? part.quantity : 'N/A';
+  };
+
   return (
     <Box sx={{ padding: 2, backgroundColor: "#fff", borderRadius: 1, boxShadow: 1, margin: 2 }}>
       <Typography variant="h5" gutterBottom>Order Preview</Typography>
@@ -154,12 +191,12 @@ const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
           <CardMedia
             component="img"
             sx={{ width: 100, height: 100, borderRadius: 1, mb: 2 }}
-            image={Config.api_url + "/uploads/" + selectedOrder.orderImage || "default-image-path"}  // Use default image if not provided
+            image={Config.api_url + "/uploads/" + (selectedOrder.orderImage || "default-image-path")}
             alt={selectedOrder.ordername}
           />
           <Typography variant="h6" gutterBottom>{selectedOrder.ordername}</Typography>
           <Typography variant="body1">Status: {selectedOrder.status}</Typography>
-          <Typography variant="body1">Order ID: {selectedOrder._id.$oid}</Typography>
+          <Typography variant="body1">Order ID: {selectedOrder._id}</Typography>
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"
@@ -182,13 +219,28 @@ const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
                       <CardMedia
                         component="img"
                         sx={{ width: 56, height: 56, borderRadius: 1 }}
-                        image={Config.api_url + "/uploads/" + item.partImage || "default-image-path"}  // Use default image if not provided
+                        image={Config.api_url + "/uploads/" + (item.partImage || "default-image-path")}
                         alt={item.partName}
                       />
                     </ListItemAvatar>
                     <ListItemText
-                      primary={<Typography variant="subtitle1"><strong>{item.partName}:</strong></Typography>}
-                      secondary={`${item.quantity} units, $${item.perPartPrice}`}
+                      primary={
+                        <Typography variant="subtitle1">
+                          <strong>{item.partName}:</strong>
+                        </Typography>
+                      }
+                      secondary={
+                        <>
+                          {getPartQuantity(item._id)} units, {getPartDate(item._id)}
+                          <Box component="span" sx={{ ml: 1 }}>
+                            {isApproved(getPartDate(item._id)) ? (
+                              <CheckCircle sx={{ color: 'green' }} />
+                            ) : (
+                              <Cancel sx={{ color: 'red' }} />
+                            )}
+                          </Box>
+                        </>
+                      }
                       sx={{ ml: 2 }}
                     />
                     <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
@@ -212,15 +264,19 @@ const OrderPreview = ({ selectedOrder, onEditPart, onDeletePart }) => {
 
 const TrackOrders = () => {
   const [orders, setOrders] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        const response = await axios.get(`${Config.api_url}/getOrders`);
-        setOrders(response.data);
+        const ordersResponse = await axios.get(`${Config.api_url}/getOrders`);
+        setOrders(ordersResponse.data);
+
+        const inventoryResponse = await axios.get(`${Config.api_url}/getInventory`);
+        setInventory(inventoryResponse.data);
       } catch (error) {
-        console.error('Error fetching order data:', error);
+        console.error('Error fetching order data or inventory data:', error);
       }
     };
 
@@ -261,10 +317,10 @@ const TrackOrders = () => {
       await axios.put(`${Config.api_url}/updateOrder/${orderId}`, { status: newStatus });
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
-          order._id.$oid === orderId ? { ...order, status: newStatus } : order
+          order._id === orderId ? { ...order, status: newStatus } : order
         )
       );
-      if (selectedOrder && selectedOrder._id.$oid === orderId) {
+      if (selectedOrder && selectedOrder._id === orderId) {
         setSelectedOrder((prevOrder) => ({ ...prevOrder, status: newStatus }));
       }
     } catch (error) {
@@ -279,7 +335,7 @@ const TrackOrders = () => {
           <OrdersTab orders={orders} onSelectOrder={handleSelectOrder} onUpdateOrderStatus={handleUpdateOrderStatus} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <OrderPreview selectedOrder={selectedOrder} onEditPart={handleEditPart} onDeletePart={handleDeletePart} />
+          <OrderPreview selectedOrder={selectedOrder} inventory={inventory} onEditPart={handleEditPart} onDeletePart={handleDeletePart} />
         </Grid>
       </Grid>
     </Container>
