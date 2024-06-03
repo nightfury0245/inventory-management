@@ -172,6 +172,7 @@ const OrderPreview = ({ selectedOrder, inventory, onEditPart, onDeletePart }) =>
   const getPartDate = (partId) => {
     console.log("Date:", partId);
     const part = inventory.find(item => item._id === partId);
+    console.log("id searched:", partId);
     console.log("Found part:", part);
     return part ? part.date : 'N/A';
   };
@@ -179,6 +180,7 @@ const OrderPreview = ({ selectedOrder, inventory, onEditPart, onDeletePart }) =>
   const getPartQuantity = (partId) => {
     console.log("Quantity:", partId);
     const part = selectedOrder.orderitems.find(item => item._id === partId);
+    console.log("id searched:", partId);
     console.log("Found part:", part);
     return part ? part.quantity : 'N/A';
   };

@@ -1,5 +1,3 @@
-// src/components/Navbar.js
-
 import React, { useState } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -17,10 +15,16 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText'; // Importing ListItemText
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
+import ListItemText from '@mui/material/ListItemText';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import AddBoxIcon from '@mui/icons-material/AddBox';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import HistoryIcon from '@mui/icons-material/History';
+import LogoutIcon from '@mui/icons-material/Logout';
 import Button from '@mui/material/Button';
+import Grid from '@mui/material/Grid';
 import NewOrder from '../NewOrder/NewOrder';
 import TrackOrders from '../TrackOrders/TrackOrders';
 import InventoryTable from '../Inventory/InventoryTable';
@@ -77,7 +81,10 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 export default function Navbar() {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('New Order');
+  const [selectedMenu, setSelectedMenu] = useState('Track Orders');
+  const [showNewOrderShortcut, setShowNewOrderShortcut] = useState(true);
+  const [showAddPartShortcut, setShowAddPartShortcut] = useState(true);
+  const [showCameraShortcut, setShowCameraShortcut] = useState(true);
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -87,7 +94,31 @@ export default function Navbar() {
     setOpen(false);
   };
 
-  const menu = ['New Order', 'Track Orders', 'Inventory', 'Add Part', 'History Log', 'Camera'];
+  const handleShortcutClick = (menu) => {
+    setSelectedMenu(menu);
+    if (menu === 'New Order') {
+      setShowNewOrderShortcut(false);
+    } else if (menu === 'Track Orders') {
+      setShowNewOrderShortcut(true);
+    } else if (menu === 'Add Part') {
+      setShowAddPartShortcut(false);
+    } else if (menu === 'Inventory') {
+      setShowAddPartShortcut(true);
+    } else if (menu === 'Camera') {
+      setShowCameraShortcut(false);
+    } else if (menu === 'Inventory') {
+      setShowCameraShortcut(true);
+    }
+  };
+
+  const menu = [
+    { text: 'Track Orders', icon: <AssignmentIcon /> },
+    { text: 'Inventory', icon: <InventoryIcon /> },
+    { text: 'New Order', icon: <AddShoppingCartIcon /> },
+    { text: 'Add Part', icon: <AddBoxIcon /> },
+    { text: 'Camera', icon: <CameraAltIcon /> },
+    { text: 'History & Log', icon: <HistoryIcon /> }
+  ];
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -103,9 +134,49 @@ export default function Navbar() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Inventory Management System
           </Typography>
+          <Button color="inherit" startIcon={<LogoutIcon />}>
+            Logout
+          </Button>
+        </Toolbar>
+        <Toolbar>
+          <Grid container spacing={2} justifyContent="flex-end">
+            <Grid item>
+              {showNewOrderShortcut ? (
+                <Button variant="contained" color="primary" startIcon={<AddShoppingCartIcon />} onClick={() => handleShortcutClick('New Order')}>
+                  New Order
+                </Button>
+              ) : (
+                <Button variant="contained" color="primary" startIcon={<AssignmentIcon />} onClick={() => handleShortcutClick('Track Orders')}>
+                  Track Orders
+                </Button>
+              )}
+            </Grid>
+            <Grid item>
+              {showAddPartShortcut ? (
+                <Button variant="contained" color="primary" startIcon={<AddBoxIcon />} onClick={() => handleShortcutClick('Add Part')}>
+                  Add Part
+                </Button>
+              ) : (
+                <Button variant="contained" color="primary" startIcon={<InventoryIcon />} onClick={() => handleShortcutClick('Inventory')}>
+                  Inventory
+                </Button>
+              )}
+            </Grid>
+            <Grid item>
+              {showCameraShortcut ? (
+                <Button variant="contained" color="primary" startIcon={<CameraAltIcon />} onClick={() => handleShortcutClick('Camera')}>
+                  Camera
+                </Button>
+              ) : (
+                <Button variant="contained" color="primary" startIcon={<InventoryIcon />} onClick={() => handleShortcutClick('Inventory')}>
+                  Inventory
+                </Button>
+              )}
+            </Grid>
+          </Grid>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -128,12 +199,10 @@ export default function Navbar() {
         </DrawerHeader>
         <Divider />
         <List>
-          {menu.map((text, index) => (
+          {menu.map(({ text, icon }) => (
             <ListItem key={text} disablePadding>
               <ListItemButton onClick={() => setSelectedMenu(text)}>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
+                <ListItemIcon>{icon}</ListItemIcon>
                 <ListItemText primary={text} />
               </ListItemButton>
             </ListItem>
@@ -145,7 +214,7 @@ export default function Navbar() {
         {selectedMenu === 'New Order' && <NewOrder />}
         {selectedMenu === 'Track Orders' && <TrackOrders />}
         {selectedMenu === 'Inventory' && <InventoryTable />}
-        {selectedMenu === 'History Log' && <HistoryLog />}
+        {selectedMenu === 'History & Log' && <HistoryLog />}
         {selectedMenu === 'Add Part' && <AddPartForm />}
         {selectedMenu === 'Camera' && <Camera />}
       </Main>
