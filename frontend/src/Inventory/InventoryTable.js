@@ -3,17 +3,20 @@ import axios from 'axios';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-  TextField, IconButton 
+  TextField, IconButton, InputLabel, MenuItem, FormControl, Select 
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import QRCode from 'qrcode.react';
 import Config from "../../Config";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 const InventoryTable = () => {
   const [parts, setParts] = useState([]);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [currentPart, setCurrentPart] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
     fetchInventory();
@@ -21,7 +24,6 @@ const InventoryTable = () => {
 
   const fetchInventory = async () => {
     try {
-      console.log(Config.api_url + '/getInventory');
       const response = await axios.get(Config.api_url + '/getInventory');
       setParts(response.data);
     } catch (error) {
@@ -52,7 +54,21 @@ const InventoryTable = () => {
 
   const handleEditSave = async () => {
     try {
-      await axios.put(Config.api_url+`/updateInventory/${currentPart._id}`, currentPart);
+      const formData = new FormData();
+      formData.append('partName', currentPart.partName);
+      formData.append('quantity', currentPart.quantity);
+      formData.append('date', currentPart.date);
+      formData.append('cost', currentPart.perPartPrice);
+      formData.append('invoiceID', currentPart.invoiceNumber);
+      formData.append('uom', currentPart.moi);
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      }
+      await axios.put(Config.api_url+`/updateInventory/${currentPart._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       setOpenEditDialog(false);
       fetchInventory();
     } catch (error) {
@@ -87,6 +103,17 @@ const InventoryTable = () => {
     setCurrentPart({ ...currentPart, [name]: value });
   };
 
+  const handleImageChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
+  const checkDate = (date) => {
+    const partDate = new Date(date);
+    const currentDate = new Date();
+    const expiryDate = new Date(partDate.setFullYear(partDate.getFullYear() + 5));
+    return expiryDate >= currentDate;
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table>
@@ -104,7 +131,9 @@ const InventoryTable = () => {
             <TableRow key={part._id}>
               <TableCell>{part.partName}</TableCell>
               <TableCell>{part.quantity}</TableCell>
-              <TableCell>{part.date}</TableCell>
+              <TableCell>
+                {part.date} {checkDate(part.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}
+              </TableCell>
               <TableCell>
                 <img src={Config.api_url+`/uploads/${part.imageFile}`} alt={part.partName} width="50" />
               </TableCell>
@@ -132,8 +161,12 @@ const InventoryTable = () => {
               <strong>ID:</strong> {currentPart._id}<br />
               <strong>Name:</strong> {currentPart.partName}<br />
               <strong>Quantity:</strong> {currentPart.quantity}<br />
-              <strong>Date:</strong> {currentPart.date}
+              <strong>Date:</strong> {currentPart.date} {checkDate(currentPart.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}<br />
+              <strong>Cost:</strong> {currentPart.cost}<br />
+              <strong>UoM:</strong> {currentPart.uom}<br />
+              <strong>Invoice ID:</strong> {currentPart.invoiceID}
             </DialogContentText>
+            <img src={Config.api_url+`/uploads/${currentPart.imageFile}`} alt={currentPart.partName} width="100" />
             {currentPart._id && <QRCode id={`qrcode-${currentPart._id}`} value={currentPart._id} />}
           </DialogContent>
           <DialogActions>
@@ -168,21 +201,45 @@ const InventoryTable = () => {
             />
             <TextField
               margin="dense"
+              label="Cost"
+              type="number"
+              fullWidth
+              name="cost"
+              value={currentPart.perPartPrice}
+              onChange={handleInputChange}
+            />
+            <TextField
+              margin="dense"
+              label="Invoice ID"
+              type="text"
+              fullWidth
+              name="invoiceID"
+              value={currentPart.invoiceNumber}
+              onChange={handleInputChange}
+            />
+            <TextField
+              margin="dense"
+              label="UoM"
+              type="text"
+              fullWidth
+              name="uom"
+              value={currentPart.moi}
+              onChange={handleInputChange}
+            />
+            <TextField
+              margin="dense"
               label="Date"
               type="date"
               fullWidth
               name="date"
               value={currentPart.date}
+              InputProps={{ readOnly: true }}
               onChange={handleInputChange}
             />
-            <TextField
-              margin="dense"
-              label="Image URL"
-              type="text"
-              fullWidth
-              name="imageFile"
-              value={currentPart.imageFile}
-              onChange={handleInputChange}
+            <InputLabel>Upload Image</InputLabel>
+            <input
+              type="file"
+              onChange={handleImageChange}
             />
           </DialogContent>
           <DialogActions>
