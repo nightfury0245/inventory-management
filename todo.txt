@@ -2,3 +2,5 @@
 2. User should not get logged out when the page refreshes. Use session storage to handle this.
 3. Default placeholder image for order if user does not upload order image.
 4. generate invoice of the data
+5. Add a feature to view order history
+6. camera
