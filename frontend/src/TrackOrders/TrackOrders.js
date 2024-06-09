@@ -109,6 +109,7 @@ const PartEditForm = ({ part, partKey, onSave }) => {
         onChange={handleInputChange}
         fullWidth
         margin="normal"
+        disabled
       />
       <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>Save</Button>
     </Box>
@@ -186,6 +187,7 @@ const OrderPreview = ({ selectedOrder, inventory, onEditPart, onDeletePart }) =>
   };
 
   return (
+    <Container>
     <Box sx={{ padding: 2, backgroundColor: "#fff", borderRadius: 1, boxShadow: 1, margin: 2 }}>
       <Typography variant="h5" gutterBottom>Order Preview</Typography>
       {selectedOrder && (
@@ -261,6 +263,7 @@ const OrderPreview = ({ selectedOrder, inventory, onEditPart, onDeletePart }) =>
         </Box>
       )}
     </Box>
+    </Container>
   );
 };
 

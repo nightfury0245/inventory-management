@@ -4,3 +4,4 @@
 4. generate invoice of the data
 5. Add a feature to view order history
 6. camera
+7. Navbar is overlapping the top part of a component. 
