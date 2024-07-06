@@ -170,25 +170,46 @@ def placeOrder():
 @app.route("/addInventory", methods=['POST'])
 def addInventory():
     try:
-        part = {
+        partName = request.form.get('partName')
+        quantity = int(request.form.get('quantity'))
+        inventory_entry = {
+            'quantity': quantity,
             'date': request.form.get('date'),
-            'partName': request.form.get('partName'),
-            'moi': request.form.get('moi'),
-            'perPartPrice': request.form.get('perPartPrice'),
-            'quantity': request.form.get('quantity'),
             'invoiceNumber': request.form.get('invoiceNumber'),
+            'perPartPrice': request.form.get('perPartPrice'),
         }
         if 'invoiceFile' in request.files:
             invoice_file = request.files['invoiceFile']
             invoice_filename = secure_filename(invoice_file.filename)
             invoice_file.save(os.path.join(UPLOAD_FOLDER, invoice_filename))
-            part['invoiceFile'] = invoice_filename
+            inventory_entry['invoiceFile'] = invoice_filename
         if 'imageFile' in request.files:
             image_file = request.files['imageFile']
             image_filename = secure_filename(image_file.filename)
             image_file.save(os.path.join(UPLOAD_FOLDER, image_filename))
-            part['imageFile'] = image_filename
-        inventory_collection.insert_one(part)
+            inventory_entry['imageFile'] = image_filename
+
+        existing_part = inventory_collection.find_one({"partName": partName})
+
+        if existing_part:
+            # Update the existing document
+            inventory_collection.update_one(
+                {"_id": existing_part["_id"]},
+                {
+                    "$inc": {"totalQuantity": quantity, "freeQuantity": quantity},
+                    "$push": {"inventoryEntries": inventory_entry}
+                }
+            )
+        else:
+            # Create a new document
+            part = {
+                'partName': partName,
+                'moi': request.form.get('moi'),
+                'totalQuantity': quantity,
+                'freeQuantity': quantity,
+                'inventoryEntries': [inventory_entry]
+            }
+            inventory_collection.insert_one(part)
         return jsonify({'message': 'Inventory added successfully'}), 200
     except Exception as e:
         error_message = str(e)
@@ -197,12 +218,23 @@ def addInventory():
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
 
+
 @app.route('/updateInventory/<id>', methods=['PUT'])
 def updateInventory(id):
     try:
         part = request.get_json()
         if '_id' in part:
             del part['_id']
+        if 'inventoryEntries' in part:
+            # Ensure new entries are correctly added to the inventoryEntries array
+            for entry in part['inventoryEntries']:
+                inventory_collection.update_one(
+                    {'_id': ObjectId(id)},
+                    {'$push': {'inventoryEntries': entry}}
+                )
+            del part['inventoryEntries']
+        
+        # Update other fields
         inventory_collection.update_one({'_id': ObjectId(id)}, {'$set': part})
         return jsonify({'message': 'Inventory updated successfully'}), 200
     except Exception as e:
@@ -211,6 +243,7 @@ def updateInventory(id):
         print(f"Error: {error_message}")
         print(f"Traceback: {error_traceback}")
         return jsonify({'error': error_message}), 500
+
 
 @app.route('/deleteInventory/<id>', methods=['DELETE'])
 def deleteInventory(id):
@@ -294,4 +327,4 @@ def process_invoice():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host = "localhost", port = 5000)
+    app.run(debug=True, host = "0.0.0.0", port = 5000)

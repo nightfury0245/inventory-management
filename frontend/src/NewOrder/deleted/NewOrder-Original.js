@@ -130,7 +130,7 @@ const NewOrder = () => {
     console.log("Order placed");
     console.log(ordername,orderitems);
     // todo write an API request to send the order data to the server
-    const placeorderResponse = await axios.post("http://localhost:5000/placeorder", {
+    const placeorderResponse = await axios.post("http://192.168.29.157:5000/placeorder", {
       ordername,
       orderitems,
     }).then(console.log("called API to place order"))

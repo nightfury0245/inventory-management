@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Box, Button, Grid, TextField } from '@mui/material';
+import { Box, Button, Grid, TextField, Dialog } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import Config from '../../Config';
+import SearchPartDialog from './SearchPartDialog';
 
 export default function AddPartForm() {
   const [parts, setParts] = useState([{
@@ -17,6 +18,8 @@ export default function AddPartForm() {
   }]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceFile, setInvoiceFile] = useState(null);
+  const [openSearchDialog, setOpenSearchDialog] = useState(false);
+  const [selectedPart, setSelectedPart] = useState({ id: null, name: '' });
 
   const handlePartChange = (index, event) => {
     const { name, value } = event.target;
@@ -92,7 +95,7 @@ export default function AddPartForm() {
         if (invoiceFile) {
           formData.append('invoiceFile', invoiceFile);
         }
-        formData.append('partName', part.partName);
+        formData.append('partName', selectedPart.name || part.partName);
         formData.append('uom', part.uom);
         formData.append('perPartPrice', part.perPartPrice);
         formData.append('quantity', part.quantity);
@@ -104,6 +107,9 @@ export default function AddPartForm() {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          params: {
+            partId: selectedPart.id || null,
+          },
         });
       }));
       alert('Parts saved successfully!');
@@ -111,6 +117,11 @@ export default function AddPartForm() {
       console.error('Error saving parts:', error);
       alert('Failed to save parts');
     }
+  };
+
+  const handlePartSelect = (part) => {
+    setSelectedPart({ id: part._id, name: part.partName });
+    setOpenSearchDialog(false);
   };
 
   return (
@@ -125,6 +136,9 @@ export default function AddPartForm() {
         }}
         fullWidth
       />
+      <Button variant="contained" onClick={() => setOpenSearchDialog(true)}>
+        Search Part
+      </Button>
       <input type="file" accept=".pdf" onChange={handleInvoiceUpload} />
       {parts.map((part, index) => (
         <Grid container spacing={2} key={index}>
@@ -209,6 +223,11 @@ export default function AddPartForm() {
       <Button onClick={handleSave} color="primary" variant="contained">
         Save
       </Button>
+      <SearchPartDialog
+        open={openSearchDialog}
+        onClose={() => setOpenSearchDialog(false)}
+        onSelect={handlePartSelect}
+      />
     </Box>
   );
 }

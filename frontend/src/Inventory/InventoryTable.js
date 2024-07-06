@@ -3,19 +3,21 @@ import axios from 'axios';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-  TextField, IconButton, InputLabel, MenuItem, FormControl, Select 
+  TextField, IconButton, InputLabel, Accordion, AccordionSummary, AccordionDetails, 
+  Typography 
 } from '@mui/material';
-import { Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-import QRCode from 'qrcode.react';
+import { Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import Config from "../../Config";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 const InventoryTable = () => {
   const [parts, setParts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [currentPart, setCurrentPart] = useState(null);
+  const [currentEntry, setCurrentEntry] = useState(null);
   const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
@@ -31,20 +33,24 @@ const InventoryTable = () => {
     }
   };
 
-  const handleViewClick = (part) => {
+  const handleViewClick = (part, entry) => {
     setCurrentPart(part);
+    setCurrentEntry(entry);
     setOpenViewDialog(true);
   };
 
-  const handleEditClick = (part) => {
+  const handleEditClick = (part, entry) => {
     setCurrentPart(part);
+    setCurrentEntry(entry);
     setOpenEditDialog(true);
   };
 
-  const handleDeleteClick = async (id) => {
+  const handleDeleteClick = async (partId, entryIndex) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        await axios.delete(Config.api_url+`/deleteInventory/${id}`);
+        const updatedPart = { ...parts.find(part => part._id === partId) };
+        updatedPart.inventoryEntries.splice(entryIndex, 1);
+        await axios.put(Config.api_url + `/updateInventory/${partId}`, updatedPart);
         fetchInventory();
       } catch (error) {
         console.error("Error deleting inventory item", error);
@@ -54,17 +60,14 @@ const InventoryTable = () => {
 
   const handleEditSave = async () => {
     try {
+      const updatedPart = { ...currentPart };
+      updatedPart.inventoryEntries[currentPart.inventoryEntries.indexOf(currentEntry)] = currentEntry;
       const formData = new FormData();
-      formData.append('partName', currentPart.partName);
-      formData.append('quantity', currentPart.quantity);
-      formData.append('date', currentPart.date);
-      formData.append('cost', currentPart.perPartPrice);
-      formData.append('invoiceID', currentPart.invoiceNumber);
-      formData.append('uom', currentPart.moi);
+      formData.append('part', JSON.stringify(updatedPart));
       if (imageFile) {
         formData.append('imageFile', imageFile);
       }
-      await axios.put(Config.api_url+`/updateInventory/${currentPart._id}`, formData, {
+      await axios.put(Config.api_url + `/updateInventory/${currentPart._id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -76,22 +79,9 @@ const InventoryTable = () => {
     }
   };
 
-  const handleDownloadQRCode = (id) => {
-    const canvas = document.getElementById(`qrcode-${id}`);
-    if (canvas) {
-      const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${id}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    }
-  };
-
   const handleDownloadInvoice = (invoiceFile) => {
     const downloadLink = document.createElement("a");
-    downloadLink.href = Config.api_url+`/uploads/${invoiceFile}`;
+    downloadLink.href = Config.api_url + `/uploads/${invoiceFile}`;
     downloadLink.download = invoiceFile;
     document.body.appendChild(downloadLink);
     downloadLink.click();
@@ -100,7 +90,7 @@ const InventoryTable = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCurrentPart({ ...currentPart, [name]: value });
+    setCurrentEntry({ ...currentEntry, [name]: value });
   };
 
   const handleImageChange = (e) => {
@@ -114,89 +104,113 @@ const InventoryTable = () => {
     return expiryDate >= currentDate;
   };
 
+  const getOldestImage = (entries) => {
+    if (entries.length === 0) return '';
+    entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return entries[0].imageFile;
+  };
+
   return (
     <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Part Name</TableCell>
-            <TableCell>Quantity</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Image</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {parts.map((part) => (
-            <TableRow key={part._id}>
-              <TableCell>{part.partName}</TableCell>
-              <TableCell>{part.quantity}</TableCell>
-              <TableCell>
-                {part.date} {checkDate(part.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}
-              </TableCell>
-              <TableCell>
-                <img src={Config.api_url+`/uploads/${part.imageFile}`} alt={part.partName} width="50" />
-              </TableCell>
-              <TableCell>
-                <IconButton onClick={() => handleViewClick(part)}>
-                  <VisibilityIcon />
-                </IconButton>
-                <IconButton onClick={() => handleEditClick(part)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton onClick={() => handleDeleteClick(part._id)}>
-                  <DeleteIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Typography variant="h4" gutterBottom>
+        Inventory
+      </Typography>
+      <TextField
+        label="Search Parts"
+        type="search"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        fullWidth
+        margin="normal"
+      />
+      {parts.filter(part => part.partName.toLowerCase().includes(searchTerm.toLowerCase())).map((part) => (
+        <Accordion key={part._id}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Table>
+              <TableBody>
+                <TableRow>
+                  <TableCell>
+                    <img src={Config.api_url + `/uploads/${getOldestImage(part.inventoryEntries)}`} alt={part.partName} width="50" />
+                  </TableCell>
+                  <TableCell>{part.partName}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      <span style={{ color: 'green' }}>Available: {part.freeQuantity}</span> / <span style={{ color: 'blue' }}>Total: {part.totalQuantity}</span>
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Quantity</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Invoice Number</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {part.inventoryEntries.map((entry, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{entry.quantity}</TableCell>
+                    <TableCell>{entry.date} {checkDate(entry.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}</TableCell>
+                    <TableCell>{entry.invoiceNumber}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleViewClick(part, entry)}>
+                        <VisibilityIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleEditClick(part, entry)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClick(part._id, index)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AccordionDetails>
+        </Accordion>
+      ))}
 
-      {currentPart && (
+      {currentPart && currentEntry && (
         <Dialog open={openViewDialog} onClose={() => setOpenViewDialog(false)}>
           <DialogTitle>Part Details</DialogTitle>
           <DialogContent>
             <DialogContentText>
               <strong>ID:</strong> {currentPart._id}<br />
               <strong>Name:</strong> {currentPart.partName}<br />
-              <strong>Quantity:</strong> {currentPart.quantity}<br />
-              <strong>Date:</strong> {currentPart.date} {checkDate(currentPart.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}<br />
-              <strong>Cost:</strong> {currentPart.cost}<br />
-              <strong>UoM:</strong> {currentPart.uom}<br />
-              <strong>Invoice ID:</strong> {currentPart.invoiceID}
+              <strong>Quantity:</strong> {currentEntry.quantity}<br />
+              <strong>Date:</strong> {currentEntry.date} {checkDate(currentEntry.date) ? <CheckCircleIcon style={{ color: 'green' }} /> : <CancelIcon style={{ color: 'red' }} />}<br />
+              <strong>Cost:</strong> {currentEntry.perPartPrice}<br />
+              <strong>Invoice Number:</strong> {currentEntry.invoiceNumber}
             </DialogContentText>
-            <img src={Config.api_url+`/uploads/${currentPart.imageFile}`} alt={currentPart.partName} width="100" />
-            {currentPart._id && <QRCode id={`qrcode-${currentPart._id}`} value={currentPart._id} />}
+            {currentEntry.imageFile && (
+              <img src={Config.api_url + `/uploads/${currentEntry.imageFile}`} alt={currentPart.partName} width="100" />
+            )}
           </DialogContent>
           <DialogActions>
-            {currentPart._id && <Button onClick={() => handleDownloadQRCode(currentPart._id)}>Download QR Code</Button>}
-            {currentPart.invoiceFile && <Button onClick={() => handleDownloadInvoice(currentPart.invoiceFile)}>Download Invoice</Button>}
+            {currentEntry.invoiceFile && <Button onClick={() => handleDownloadInvoice(currentEntry.invoiceFile)}>Download Invoice</Button>}
             <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       )}
 
-      {currentPart && (
+      {currentPart && currentEntry && (
         <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
-          <DialogTitle>Edit Part</DialogTitle>
+          <DialogTitle>Edit Entry</DialogTitle>
           <DialogContent>
-            <TextField
-              margin="dense"
-              label="Name"
-              type="text"
-              fullWidth
-              name="partName"
-              value={currentPart.partName}
-              onChange={handleInputChange}
-            />
             <TextField
               margin="dense"
               label="Quantity"
               type="number"
               fullWidth
               name="quantity"
-              value={currentPart.quantity}
+              value={currentEntry.quantity}
               onChange={handleInputChange}
             />
             <TextField
@@ -204,26 +218,17 @@ const InventoryTable = () => {
               label="Cost"
               type="number"
               fullWidth
-              name="cost"
-              value={currentPart.perPartPrice}
+              name="perPartPrice"
+              value={currentEntry.perPartPrice}
               onChange={handleInputChange}
             />
             <TextField
               margin="dense"
-              label="Invoice ID"
+              label="Invoice Number"
               type="text"
               fullWidth
-              name="invoiceID"
-              value={currentPart.invoiceNumber}
-              onChange={handleInputChange}
-            />
-            <TextField
-              margin="dense"
-              label="UoM"
-              type="text"
-              fullWidth
-              name="uom"
-              value={currentPart.moi}
+              name="invoiceNumber"
+              value={currentEntry.invoiceNumber}
               onChange={handleInputChange}
             />
             <TextField
@@ -232,7 +237,7 @@ const InventoryTable = () => {
               type="date"
               fullWidth
               name="date"
-              value={currentPart.date}
+              value={currentEntry.date}
               InputProps={{ readOnly: true }}
               onChange={handleInputChange}
             />

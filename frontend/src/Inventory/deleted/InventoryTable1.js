@@ -348,7 +348,7 @@ export default function InventoryTable() {
   const getInventoryData = async() => {
     // make api call and get inventory data
     try {
-      const response = await axios.get("http://localhost:5000/getInventory");
+      const response = await axios.get("http://192.168.29.157:5000/getInventory");
       setRows(response.data);
       console.log(response.data);
     } catch (error) {
